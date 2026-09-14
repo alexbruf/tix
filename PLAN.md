@@ -62,6 +62,10 @@ Follows the order of work in `docs/HANDOFF.md`. Each step ends with a green gate
 - CI matrix on macOS, Linux, Windows with Node 20.
 - Publishing waits for user approval.
 
+## Flags for the user (spec gaps found during the build)
+
+1. **TIX-10 repair deadlock.** A ticket with an unknown status *and* a missing required field cannot be repaired by one command: `mv` fails rule 3 and `set` fails rule 2, because each write must leave the ticket fully valid (TIX-25). Today the only fix is editing `ticket.md` by hand. Options: allow `set` to take `status=`, or let `mv` accept `KEY=VALUE` extras.
+
 ## Decisions (spec is silent; recorded, not asked)
 
 - TIX-4 vs TIX-5 (sync `prompt` vs async `node:readline`): the host runs `node:readline` in a `worker_threads` worker and blocks the main thread with `Atomics.wait` on a `SharedArrayBuffer` until the answer arrives. Both requirements hold as written. User approved (2026-09-14).
@@ -75,6 +79,20 @@ Follows the order of work in `docs/HANDOFF.md`. Each step ends with a green gate
 - `board`, `filter` and `ls` sorting return indices into the input `Vec<Ticket>`, which keeps the partition proofs simple.
 - An invalid `tix.yaml` makes every command except `init` and `check` exit 1 with the schema error.
 - `tix set` with the same KEY twice is a usage error (exit 2).
+- Verus pinned: release `0.2026.09.13.671956e`, Rust `1.98.1`, `vstd =0.0.0-2026-09-06-0133`.
+- `gray_matter` is not used: it trims the body, which breaks TIX-12 byte-for-byte preservation. Frontmatter is split on the `---` lines by hand and parsed with `serde_yaml`.
+- `serde_yaml` writes `deliverables` list items flush with the key (`- label: x`), not indented as in the TIX-12 example. Both forms parse.
+- Storage paths reaching the host are absolute; commands address them through `Ctx`, which implements `Storage` with workspace-relative paths (TIX-3).
+- The wasm module imports its ten functions from `globalThis.tix_host`; wasm-bindgen's internal `__wbindgen_*` shims are not counted as imports.
+- `tix check` prints problems on stdout and `N problem(s)` on stderr; exit 1.
+- `tix check` also reports a folder name that differs from the ticket `id` (TIX-7) and a folder without `ticket.md`.
+- Unparseable `ticket.md` files are skipped with a stderr warning by `ls`/`board`; `show` on one exits 1.
+- Write commands print the ticket id on success; `--json` prints the ticket object.
+- `tix set KEY=` on a key not in the schema removes it (repairs TIX-10 leftovers); `id`/`status`/`created`/`updated`/`deliverables` are exit 2.
+- `list` field values on the command line are comma-separated.
+- `attach` label default: last non-empty `/` segment of the ref, else the whole ref.
+- Id `NotFound`/`TooShort`/`Ambiguous` all exit 2.
+- Board uses comfy-table `ASCII_BORDERS_ONLY_CONDENSED`; `ls` uses the borderless `NOTHING` preset. ASCII keeps Windows consoles readable.
 - `?` board column appears only when non-empty (TIX-21 wording wins over TIX-26's).
 - With `--group`, unknown-status tickets still go to a trailing `?` column.
 - `filter` takes the schema as an extra argument, since `group:v` needs it (TIX-27).
