@@ -1,0 +1,6 @@
+$ tix check
+exit: 1
+--- stdout
+tix.yaml: rule 4: field name 'id' is duplicated, not [a-z][a-z0-9_]*, or a built-in name
+--- stderr
+1 problem(s)

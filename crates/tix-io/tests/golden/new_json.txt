@@ -1,0 +1,5 @@
+$ tix new --title T --client acme --type article --json
+exit: 0
+--- stdout
+{"client":"acme","created":"2026-09-14T15:02:11Z","deliverables":[],"id":"01M2G7189R000G40R40M30E209","status":"backlog","title":"T","type":"article","updated":"2026-09-14T15:02:11Z"}
+--- stderr

@@ -1,0 +1,5 @@
+$ tix new --title T --client acme --type article --status bogus
+exit: 1
+--- stdout
+--- stderr
+rule 2: unknown status 'bogus'; valid statuses: backlog, in_progress, done

@@ -1,0 +1,6 @@
+$ tix check
+exit: 1
+--- stdout
+tix.yaml: rule 2: status 'weird' has group 'nope'; expected backlog, in_progress or completed
+--- stderr
+1 problem(s)

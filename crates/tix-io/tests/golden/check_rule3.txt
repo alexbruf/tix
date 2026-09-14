@@ -1,0 +1,6 @@
+$ tix check
+exit: 1
+--- stdout
+tix.yaml: rule 3: no status has group 'backlog'
+--- stderr
+1 problem(s)

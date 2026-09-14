@@ -1,0 +1,5 @@
+$ tix path 01K5B2 --json
+exit: 0
+--- stdout
+{"path":"tickets/01K5B2C3D4E5F6G7H8J9K0M1N2"}
+--- stderr

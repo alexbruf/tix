@@ -1,0 +1,5 @@
+$ tix detach 01K5B2 nope
+exit: 1
+--- stdout
+--- stderr
+no deliverable matches 'nope'

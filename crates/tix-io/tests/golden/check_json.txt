@@ -1,0 +1,6 @@
+$ tix check --json
+exit: 1
+--- stdout
+{"ok":false,"problems":[{"message":"rule 3: required field 'client' is missing or empty","path":"tickets/01K5D1E2F3G4H5J6K7M8N9P0Q1/ticket.md"},{"message":"rule 2: unknown status 'review'; valid statuses: backlog, in_progress, done","path":"tickets/01K5E9F8G7H6J5K4M3N2P1Q0R9/ticket.md"}]}
+--- stderr
+2 problem(s)

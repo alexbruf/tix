@@ -1,0 +1,5 @@
+$ tix detach 01K5B2 https://docs.google.com/document/d/abc
+exit: 0
+--- stdout
+01K5B2C3D4E5F6G7H8J9K0M1N2
+--- stderr

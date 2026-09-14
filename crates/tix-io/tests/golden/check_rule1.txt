@@ -1,0 +1,6 @@
+$ tix check
+exit: 1
+--- stdout
+tix.yaml: rule 1: duplicate status name 'backlog'
+--- stderr
+1 problem(s)

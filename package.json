@@ -1,0 +1,18 @@
+{
+  "name": "@viewengine/tix",
+  "version": "0.1.0",
+  "description": "File-based ticket board for content work",
+  "license": "MIT",
+  "type": "commonjs",
+  "bin": { "tix": "bin/tix.js" },
+  "files": ["bin/", "dist/tix_wasm.js", "dist/tix_wasm_bg.wasm"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "verify": "cargo verus verify -p tix-core",
+    "test:rust": "cargo test --workspace",
+    "build:wasm": "wasm-pack build crates/tix-wasm --target nodejs --release --out-dir ../../dist --no-pack && node -e \"require('fs').rmSync('dist/.gitignore',{force:true})\"",
+    "test:node": "node --test tests/node/",
+    "test:node:update": "TIX_UPDATE_GOLDEN=1 node --test tests/node/",
+    "ci": "npm run verify && npm run test:rust && npm run build:wasm && npm run test:node"
+  }
+}

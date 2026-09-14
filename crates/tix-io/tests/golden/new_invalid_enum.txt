@@ -1,0 +1,5 @@
+$ tix new --title T --client acme --type bogus
+exit: 1
+--- stdout
+--- stderr
+rule 4: field 'type' value bogus is not a valid enum (article, landing_page, linkedin, other)

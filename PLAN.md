@@ -1,5 +1,7 @@
 # tix build plan
 
+Status (2026-09-14): steps 0-6 done and green locally; step 7 verified on macOS via `npm pack` + `npx --package`. Linux/Windows runs and publishing wait for a remote and user approval.
+
 Follows the order of work in `docs/HANDOFF.md`. Each step ends with a green gate and a commit on `build/v1`.
 
 ## Step 0: Toolchain and repo (done in this commit, minus Verus install)
@@ -62,12 +64,34 @@ Follows the order of work in `docs/HANDOFF.md`. Each step ends with a green gate
 - CI matrix on macOS, Linux, Windows with Node 20.
 - Publishing waits for user approval.
 
-## Open questions (need the user)
-
-1. **TIX-4 vs TIX-5, prompt is sync but `node:readline` is async.** `run` returns `u32` and `prompt` returns `string | null` synchronously, which `node:readline` cannot do. See the question put to the user.
-
 ## Decisions (spec is silent; recorded, not asked)
 
+- TIX-4 vs TIX-5 (sync `prompt` vs async `node:readline`): the host runs `node:readline` in a `worker_threads` worker and blocks the main thread with `Atomics.wait` on a `SharedArrayBuffer` until the answer arrives. Both requirements hold as written. User approved (2026-09-14).
+
+- Core timestamps are `u64` unix seconds; `tix-io` renders RFC 3339 UTC.
+- Status `group` is a `String` in the core so TIX-9 rule 2 is proved there; field `type` is an enum because TIX-8 (parse) owns that check.
+- A ticket with duplicate field keys violates TIX-11 rule 4 (unrepresentable in YAML anyway; keeps lookups well-defined).
+- Write operations (TIX-25) do not require `valid_ticket(t)` as a precondition, so `set`/`mv` can repair tickets broken by a schema change (TIX-10). They validate the result instead.
+- `detach` failures (no match, or more than one match) use their own error type; they are not TIX-11 rules.
+- Field `default`s are applied by `tix-io` in `new` before prompting; a required field with a default is not prompted.
+- `board`, `filter` and `ls` sorting return indices into the input `Vec<Ticket>`, which keeps the partition proofs simple.
+- An invalid `tix.yaml` makes every command except `init` and `check` exit 1 with the schema error.
+- `tix set` with the same KEY twice is a usage error (exit 2).
+- **Deviation from TIX-19 (user said "figure it out", 2026-09-14):** `tix set` also accepts `status=S`. Without it, a ticket with an unknown status and a missing required field could not be repaired by any single command, since `mv` fails rule 3 and `set` fails rule 2 (TIX-10 vs TIX-25). `set_fields` takes `status: Option<String>` and keeps every TIX-25 guarantee.
+- Verus pinned: release `0.2026.09.13.671956e`, Rust `1.98.1`, `vstd =0.0.0-2026-09-06-0133`.
+- `gray_matter` is not used: it trims the body, which breaks TIX-12 byte-for-byte preservation. Frontmatter is split on the `---` lines by hand and parsed with `serde_yaml`.
+- `serde_yaml` writes `deliverables` list items flush with the key (`- label: x`), not indented as in the TIX-12 example. Both forms parse.
+- Storage paths reaching the host are absolute; commands address them through `Ctx`, which implements `Storage` with workspace-relative paths (TIX-3).
+- The wasm module imports its ten functions from `globalThis.tix_host`; wasm-bindgen's internal `__wbindgen_*` shims are not counted as imports.
+- `tix check` prints problems on stdout and `N problem(s)` on stderr; exit 1.
+- `tix check` also reports a folder name that differs from the ticket `id` (TIX-7) and a folder without `ticket.md`.
+- Unparseable `ticket.md` files are skipped with a stderr warning by `ls`/`board`; `show` on one exits 1.
+- Write commands print the ticket id on success; `--json` prints the ticket object.
+- `tix set KEY=` on a key not in the schema removes it (repairs TIX-10 leftovers); `id`/`created`/`updated`/`deliverables` are exit 2.
+- `list` field values on the command line are comma-separated.
+- `attach` label default: last non-empty `/` segment of the ref, else the whole ref.
+- Id `NotFound`/`TooShort`/`Ambiguous` all exit 2.
+- Board uses comfy-table `ASCII_BORDERS_ONLY_CONDENSED`; `ls` uses the borderless `NOTHING` preset. ASCII keeps Windows consoles readable.
 - `?` board column appears only when non-empty (TIX-21 wording wins over TIX-26's).
 - With `--group`, unknown-status tickets still go to a trailing `?` column.
 - `filter` takes the schema as an extra argument, since `group:v` needs it (TIX-27).

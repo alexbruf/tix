@@ -1,0 +1,5 @@
+$ tix new --title Article title --client acme --type article --owner charlie --due 2026-10-01
+exit: 0
+--- stdout
+01M2G7189R000G40R40M30E209
+--- stderr

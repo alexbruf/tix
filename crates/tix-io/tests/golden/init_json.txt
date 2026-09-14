@@ -1,0 +1,5 @@
+$ tix init --json
+exit: 0
+--- stdout
+{"root":"/fresh2"}
+--- stderr

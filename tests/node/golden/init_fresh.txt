@@ -1,0 +1,5 @@
+$ tix init
+exit: 0
+--- stdout
+initialized <WS>
+--- stderr

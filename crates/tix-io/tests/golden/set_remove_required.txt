@@ -1,0 +1,5 @@
+$ tix set 01K5AQ client=
+exit: 1
+--- stdout
+--- stderr
+rule 3: required field 'client' is missing or empty

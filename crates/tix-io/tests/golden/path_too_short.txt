@@ -1,0 +1,5 @@
+$ tix path 01K
+exit: 2
+--- stdout
+--- stderr
+id prefix '01K' is too short; use at least 4 characters

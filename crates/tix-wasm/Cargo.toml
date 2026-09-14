@@ -1,0 +1,12 @@
+[package]
+name = "tix-wasm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+tix-io = { version = "0.1.0", path = "../tix-io" }
+wasm-bindgen = "0.2.128"
+
+[lib]
+crate-type = ["cdylib", "rlib"]

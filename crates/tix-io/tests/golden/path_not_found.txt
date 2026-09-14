@@ -1,0 +1,5 @@
+$ tix path ZZZZ
+exit: 2
+--- stdout
+--- stderr
+no ticket matches 'ZZZZ'
