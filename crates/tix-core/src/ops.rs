@@ -383,11 +383,15 @@ pub open spec fn set_result(
     t: Ticket,
     c: Ticket,
     title: Option<String>,
+    status: Option<String>,
     asg: Seq<Assignment>,
     now: u64,
 ) -> bool {
     &&& framed(t, c, now)
-    &&& c.status == t.status
+    &&& match status {
+        Some(x) => c.status == x,
+        None => c.status == t.status,
+    }
     &&& c.deliverables == t.deliverables
     &&& match title {
         Some(x) => c.title == x,
@@ -573,19 +577,21 @@ fn remove_named_exec(fs: &mut Vec<FieldEntry>, n: &String)
     assert(fs@ =~= remove_named(o, n@));
 }
 
-/// `tix set` (TIX-19, TIX-25). `title: None` leaves the title alone;
-/// an assignment with `value: None` removes that field.
+/// `tix set` (TIX-19, TIX-25). `title`/`status: None` leave them alone;
+/// an assignment with `value: None` removes that field. Accepting `status`
+/// lets one write repair a ticket broken by a schema change in two ways (TIX-10).
 pub fn set_fields(
     t: Ticket,
     s: &Schema,
     title: Option<String>,
+    status: Option<String>,
     assigns: Vec<Assignment>,
     now: u64,
 ) -> (r: Result<Ticket, TicketError>)
     requires
         names_distinct(assigns@),
     ensures
-        r matches Ok(t2) ==> set_result(t, t2, title, assigns@, now) && valid_ticket(t2, *s),  // TIX-25
+        r matches Ok(t2) ==> set_result(t, t2, title, status, assigns@, now) && valid_ticket(t2, *s),  // TIX-25
         // TIX-25: fields not named are unchanged.
         r matches Ok(t2) ==> forall|e: FieldEntry|
             !named(assigns@, e.name@) ==> (#[trigger] t2.fields@.contains(e) <==> t.fields@.contains(e)),
@@ -599,10 +605,11 @@ pub fn set_fields(
                 FieldEntry { name: assigns@[k].name, value: assigns@[k].value->Some_0 },
             ),
         r matches Err(e) ==> forall|c: Ticket|
-            set_result(t, c, title, assigns@, now) ==> first_ticket_violation(c, *s, e),  // TIX-25
+            set_result(t, c, title, status, assigns@, now) ==> first_ticket_violation(c, *s, e),  // TIX-25
 {
     let ghost orig = assigns@;
     let ghost title_g = title;
+    let ghost status_g = status;
     let ghost t_fields = t.fields@;
     let n = assigns.len();
     let mut rest = assigns;
@@ -646,15 +653,21 @@ pub fn set_fields(
         },
         None => {},
     }
+    match status {
+        Some(x) => {
+            t2.status = x;
+        },
+        None => {},
+    }
     t2.updated = now;
-    assert(set_result(t, t2, title_g, orig, now));
+    assert(set_result(t, t2, title_g, status_g, orig, now));
     proof {
         lemma_apply_all(t_fields, orig);
     }
     match t2.validate(s) {
         Ok(()) => Ok(t2),
         Err(e) => {
-            assert forall|c: Ticket| set_result(t, c, title_g, orig, now) implies first_ticket_violation(
+            assert forall|c: Ticket| set_result(t, c, title_g, status_g, orig, now) implies first_ticket_violation(
                 c,
                 *s,
                 e,
