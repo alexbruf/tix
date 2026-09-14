@@ -1,5 +1,7 @@
 //! Plain data types shared by the verified core and the io layer.
 //! Timestamps are unix seconds; `tix-io` renders them as RFC 3339 (TIX-12).
+//! Derived `Clone` carries no Verus spec; verified code never calls it.
+#![cfg_attr(verus_keep_ghost, verifier::allow(autoderive_clone_without_spec))]
 
 use vstd::prelude::*;
 
