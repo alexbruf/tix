@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Rust toolchain (from rust-toolchain.toml)
-        run: rustup show
+        run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2
       - name: Install Verus
         env:
