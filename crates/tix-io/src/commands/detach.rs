@@ -1,8 +1,44 @@
-//! `tix detach`.
+//! `tix detach` (TIX-20).
 
+use crate::app::{load_ticket, load_valid_schema, resolve_folder, save_ticket, ticket_json};
 use crate::host::{CmdResult, Ctx, Failure, Host};
+use crate::messages::ticket_error;
 use clap::ArgMatches;
+use tix_core::ops::{detach, DetachError};
+use tix_core::{Schema, Ticket};
 
-pub fn run<H: Host>(_ctx: &mut Ctx<H>, _m: &ArgMatches) -> CmdResult {
-    Err(Failure::usage("tix detach is not implemented yet"))
+pub fn run<H: Host>(ctx: &mut Ctx<H>, m: &ArgMatches) -> CmdResult {
+    let schema = load_valid_schema(ctx)?;
+    let prefix = m.get_one::<String>("id").expect("required");
+    let folder = resolve_folder(ctx, prefix)?;
+    let t = load_ticket(ctx, &schema, &folder)?;
+    let target = m.get_one::<String>("target").expect("required").clone();
+
+    let now = ctx.host.now_unix();
+    let original = t.clone();
+    match detach(t, &schema, &target, now) {
+        Ok(t2) => {
+            save_ticket(ctx, &schema, &t2)?;
+            emit(ctx, &schema, &t2);
+            Ok(())
+        }
+        Err(DetachError::NoMatch) => Err(Failure::validation(format!(
+            "no deliverable matches '{target}'"
+        ))),
+        Err(DetachError::Ambiguous) => Err(Failure::validation(format!(
+            "'{target}' matches more than one deliverable"
+        ))),
+        Err(DetachError::Invalid(e)) => {
+            Err(Failure::validation(ticket_error(&original, &schema, &e)))
+        }
+    }
+}
+
+fn emit<H: Host>(ctx: &mut Ctx<H>, schema: &Schema, t: &Ticket) {
+    if ctx.json {
+        let text = serde_json::Value::Object(ticket_json(t, schema)).to_string();
+        ctx.out(&format!("{text}\n"));
+    } else {
+        ctx.out(&format!("{}\n", t.id));
+    }
 }

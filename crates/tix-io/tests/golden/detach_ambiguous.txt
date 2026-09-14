@@ -1,0 +1,5 @@
+$ tix detach 01K5F0 shared
+exit: 1
+--- stdout
+--- stderr
+'shared' matches more than one deliverable

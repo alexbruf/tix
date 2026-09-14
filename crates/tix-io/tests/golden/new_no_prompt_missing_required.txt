@@ -1,0 +1,5 @@
+$ tix new --title T --no-prompt
+exit: 1
+--- stdout
+--- stderr
+rule 3: required field 'client' is missing or empty

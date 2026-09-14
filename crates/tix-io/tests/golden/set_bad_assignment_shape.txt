@@ -1,0 +1,5 @@
+$ tix set 01K5AQ owner
+exit: 2
+--- stdout
+--- stderr
+assignment 'owner' is not KEY=VALUE

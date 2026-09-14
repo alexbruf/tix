@@ -1,0 +1,5 @@
+$ tix new --title T
+exit: 0
+--- stdout
+01M2G7189R000G40R40M30E209
+--- stderr

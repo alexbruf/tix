@@ -1,0 +1,5 @@
+$ tix set 01K5AQ bogus=foo
+exit: 1
+--- stdout
+--- stderr
+rule 4: field '' is not declared in tix.yaml
