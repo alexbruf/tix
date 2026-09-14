@@ -71,7 +71,10 @@ pub fn command(schema: Option<&Schema>) -> Command {
     Command::new("tix")
         .about("File-based ticket board: tickets are Markdown files, the schema is tix.yaml")
         .long_about(help::ROOT_LONG)
-        .after_help("Run `tix --help` for the agent quickstart, JSON shapes and exit codes.")
+        .after_help(
+            "Every command has its own help with formats, output and examples: `tix <command> --help`.\n\
+             Run `tix --help` for the agent quickstart, JSON shapes and exit codes.",
+        )
         .after_long_help(help::ROOT_AFTER)
         .version(env!("CARGO_PKG_VERSION"))
         .subcommand_required(true)
