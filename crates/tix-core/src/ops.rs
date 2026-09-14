@@ -3,8 +3,10 @@
 //! candidate violates. Inputs need not be valid, so `set` and `mv` can repair
 //! tickets broken by a schema change (TIX-10).
 
+#[allow(unused_imports)] // spec-only items
 use crate::schema::*;
 use crate::text::*;
+#[allow(unused_imports)] // spec-only items
 use crate::ticket::*;
 use crate::types::*;
 use vstd::prelude::*;
