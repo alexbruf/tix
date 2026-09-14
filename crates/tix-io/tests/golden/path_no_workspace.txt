@@ -1,0 +1,5 @@
+$ tix path 01K5AQ
+exit: 2
+--- stdout
+--- stderr
+no tix.yaml found

@@ -339,7 +339,7 @@ fn parse_rfc3339(s: &str) -> Option<u64> {
     u64::try_from(secs).ok()
 }
 
-fn format_rfc3339(secs: u64) -> String {
+pub fn format_rfc3339(secs: u64) -> String {
     let days = (secs / 86400) as i64;
     let rem = secs % 86400;
     let (y, m, d) = civil_from_days(days);

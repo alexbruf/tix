@@ -1,0 +1,5 @@
+$ tix path 01K5AQ
+exit: 0
+--- stdout
+tickets/01K5AQ9Z3R7M8N2P4Q6S8T0V1W
+--- stderr

@@ -99,12 +99,13 @@ impl Storage for MemStorage {
     }
 
     fn mkdir_all(&mut self, path: &str) -> Result<(), IoError> {
+        let absolute = path.starts_with('/');
         let mut acc = String::new();
         for seg in path.split('/') {
             if seg.is_empty() {
                 continue;
             }
-            if !acc.is_empty() {
+            if !acc.is_empty() || absolute {
                 acc.push('/');
             }
             acc.push_str(seg);
