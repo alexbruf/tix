@@ -1,0 +1,6 @@
+$ tix ls group:completed
+exit: 0
+--- stdout
+ ID        STATUS  TITLE          client  type
+ 01K5C7Q8  done    LinkedIn post  nova    linkedin
+--- stderr

@@ -1,0 +1,6 @@
+$ tix check
+exit: 1
+--- stdout
+tickets/BADFOLDER/ticket.md: id '01K5ZZZZZZZZZZZZZZZZZZZZZZ' does not match folder name
+--- stderr
+1 problem(s)

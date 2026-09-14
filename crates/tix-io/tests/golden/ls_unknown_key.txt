@@ -1,0 +1,5 @@
+$ tix ls bogus:val
+exit: 2
+--- stdout
+--- stderr
+unknown filter key 'bogus'

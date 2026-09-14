@@ -1,0 +1,5 @@
+$ tix show 01K5AQ --json
+exit: 0
+--- stdout
+{"body":"Brief goes here.\n","client":"nova","created":"2026-09-10T09:00:00Z","deliverables":[],"due":"2026-09-30","id":"01K5AQ9Z3R7M8N2P4Q6S8T0V1W","owner":"charlie","problem":null,"status":"backlog","title":"Nova product comparison article","type":"article","updated":"2026-09-10T09:00:00Z","valid":true}
+--- stderr

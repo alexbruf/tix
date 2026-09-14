@@ -7,6 +7,7 @@ pub mod host;
 pub mod messages;
 pub mod schema_yaml;
 pub mod storage;
+pub mod table;
 pub mod testkit;
 pub mod ticket_md;
 pub mod ulid;
