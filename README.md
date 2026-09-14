@@ -11,6 +11,7 @@ npx @viewengine/tix board
 - Spec: [`tix.sdoc`](tix.sdoc) (strictdoc, requirements TIX-1 to TIX-31)
 - Build plan: [`PLAN.md`](PLAN.md)
 - Contributor notes: [`CLAUDE.md`](CLAUDE.md)
+- Agent skill: [`skills/tix/SKILL.md`](skills/tix/SKILL.md) (install: `ln -s "$PWD/skills/tix" ~/.claude/skills/tix`)
 
 ## Environment
 

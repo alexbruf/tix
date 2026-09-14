@@ -9,6 +9,8 @@ up from the current directory to the nearest tix.yaml.";
 
 pub const ROOT_AFTER: &str = "\
 AGENT QUICKSTART
+  Read `tix <command> --help` before using a command for the first time: each one documents its
+  exact argument formats, output, --json shape, errors and examples (`tix help <command>` works too).
   Pass --no-prompt so a missing required value fails (exit 1) instead of waiting on stdin.
   Pass --json when parsing output: every command prints exactly one JSON document on stdout.
   Results go to stdout; errors and warnings go to stderr.
@@ -95,7 +97,8 @@ OUTPUT
     tickets/01K5D1E2.../ticket.md: rule 3: required field 'client' is missing or empty
     tickets/01K5E9F8.../ticket.md: rule 2: unknown status 'review'; valid statuses: backlog, ...
   Also reported: a folder without ticket.md, unparseable frontmatter, and an id that differs
-  from its folder name.
+  from its folder name. Only the first broken rule per ticket is shown: re-run after each fix
+  until it prints `ok`.
   --json: {\"ok\": false, \"problems\": [{\"path\": \"...\", \"message\": \"...\"}]} (exit code unchanged)
 
 FIXING PROBLEMS
