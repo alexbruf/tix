@@ -43,3 +43,15 @@ fn tix_7_mv_ambiguous_prefix_exits_2() {
     assert_eq!(o.code, 2);
     assert!(h.writes().is_empty());
 }
+
+#[test]
+fn tix_18_unknown_status_message_names_it() {
+    let mut h = fixture();
+    let o = h.run(WS, &["mv", "01K5AQ", "bogus"]);
+    assert_eq!(o.code, 1);
+    assert_eq!(
+        o.stderr,
+        "rule 2: unknown status 'bogus'; valid statuses: backlog, in_progress, done\n"
+    );
+    assert!(h.writes().is_empty());
+}

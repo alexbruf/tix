@@ -84,16 +84,24 @@ fn tix_19_set_duplicate_key_exits_2() {
 }
 
 #[test]
-fn tix_19_set_status_is_usage_error() {
+fn tix_10_set_status_and_field_repairs_ticket_in_one_write() {
+    // Unknown status and missing required field: mv alone fails rule 3, a
+    // field-only set fails rule 2, so set accepts status= (PLAN.md decision).
     let mut h = fixture();
+    let path = format!("{WS}/tickets/{T_UNKNOWN_STATUS}/ticket.md");
+    let broken = h.file(&path).unwrap().replace("client: acme\n", "");
+    h.put(&path, &broken);
+    assert_eq!(h.run(WS, &["mv", "01K5E9", "backlog"]).code, 1);
+    assert_eq!(h.run(WS, &["set", "01K5E9", "client=acme"]).code, 1);
     let o = golden(
-        "set_status_rejected",
+        "set_status_repair",
         &mut h,
         WS,
-        &["set", "01K5AQ", "status=done"],
+        &["set", "01K5E9", "status=backlog", "client=acme"],
     );
-    assert_eq!(o.code, 2);
-    assert!(h.writes().is_empty());
+    assert_eq!(o.code, 0);
+    let text = h.file(&path).unwrap();
+    assert!(text.contains("status: backlog\n") && text.contains("client: acme\n"));
 }
 
 #[test]

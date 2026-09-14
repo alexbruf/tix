@@ -1,0 +1,5 @@
+$ tix set 01K5E9 status=backlog client=acme
+exit: 0
+--- stdout
+01K5E9F8G7H6J5K4M3N2P1Q0R9
+--- stderr

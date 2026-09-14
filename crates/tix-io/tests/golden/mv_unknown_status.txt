@@ -2,4 +2,4 @@ $ tix mv 01K5AQ bogus
 exit: 1
 --- stdout
 --- stderr
-rule 2: unknown status 'backlog'; valid statuses: backlog, in_progress, done
+rule 2: unknown status 'bogus'; valid statuses: backlog, in_progress, done

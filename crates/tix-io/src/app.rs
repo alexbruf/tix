@@ -154,6 +154,16 @@ pub fn cli_value(field: &Field, raw: &str) -> Value {
     }
 }
 
+/// Prints a written ticket: its id, or the ticket object with `--json`.
+pub fn emit_ticket<H: Host>(ctx: &mut Ctx<H>, schema: &Schema, t: &Ticket) {
+    let text = if ctx.json {
+        serde_json::Value::Object(ticket_json(t, schema)).to_string()
+    } else {
+        t.id.clone()
+    };
+    ctx.out(&format!("{text}\n"));
+}
+
 /// Serializes a ticket's frontmatter (plus `body`) as a JSON object.
 pub fn ticket_json(t: &Ticket, schema: &Schema) -> serde_json::Map<String, serde_json::Value> {
     use serde_json::Value as J;

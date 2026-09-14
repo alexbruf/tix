@@ -1,5 +1,0 @@
-$ tix set 01K5AQ status=done
-exit: 2
---- stdout
---- stderr
-cannot set 'status'; use tix mv

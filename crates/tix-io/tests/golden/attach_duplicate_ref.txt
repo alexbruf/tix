@@ -2,4 +2,4 @@ $ tix attach 01K5B2 https://docs.google.com/document/d/abc
 exit: 1
 --- stdout
 --- stderr
-rule 5: invalid deliverables
+rule 5: deliverable ref 'https://docs.google.com/document/d/abc' is already attached

@@ -1,13 +1,13 @@
 //! `tix set` (TIX-19).
 
 use crate::app::{
-    cli_value, load_ticket, load_valid_schema, resolve_folder, save_ticket, ticket_json,
+    cli_value, emit_ticket, load_ticket, load_valid_schema, resolve_folder, save_ticket,
 };
 use crate::host::{CmdResult, Ctx, Failure, Host};
 use crate::messages::ticket_error;
 use clap::ArgMatches;
 use tix_core::ops::{set_fields, Assignment};
-use tix_core::{Schema, Ticket, Value};
+use tix_core::{FieldEntry, Ticket, Value};
 
 pub fn run<H: Host>(ctx: &mut Ctx<H>, m: &ArgMatches) -> CmdResult {
     let schema = load_valid_schema(ctx)?;
@@ -22,6 +22,7 @@ pub fn run<H: Host>(ctx: &mut Ctx<H>, m: &ArgMatches) -> CmdResult {
 
     let mut seen: Vec<&str> = Vec::new();
     let mut title: Option<String> = None;
+    let mut status: Option<String> = None;
     let mut assigns: Vec<Assignment> = Vec::new();
 
     for arg in raw {
@@ -36,7 +37,7 @@ pub fn run<H: Host>(ctx: &mut Ctx<H>, m: &ArgMatches) -> CmdResult {
         match key {
             "title" => title = Some(value.to_string()),
             "id" => return Err(Failure::usage("cannot set 'id'")),
-            "status" => return Err(Failure::usage("cannot set 'status'; use tix mv")),
+            "status" => status = Some(value.to_string()),
             "created" => return Err(Failure::usage("cannot set 'created'")),
             "updated" => return Err(Failure::usage("cannot set 'updated'")),
             "deliverables" => {
@@ -66,22 +67,40 @@ pub fn run<H: Host>(ctx: &mut Ctx<H>, m: &ArgMatches) -> CmdResult {
     }
 
     let now = ctx.host.now_unix();
-    let original = t.clone();
-    match set_fields(t, &schema, title, assigns, now) {
+    let candidate = message_candidate(&t, &title, &status, &assigns);
+    match set_fields(t, &schema, title, status, assigns, now) {
         Ok(t2) => {
             save_ticket(ctx, &schema, &t2)?;
-            emit(ctx, &schema, &t2);
+            emit_ticket(ctx, &schema, &t2);
             Ok(())
         }
-        Err(e) => Err(Failure::validation(ticket_error(&original, &schema, &e))),
+        Err(e) => Err(Failure::validation(ticket_error(&candidate, &schema, &e))),
     }
 }
 
-fn emit<H: Host>(ctx: &mut Ctx<H>, schema: &Schema, t: &Ticket) {
-    if ctx.json {
-        let text = serde_json::Value::Object(ticket_json(t, schema)).to_string();
-        ctx.out(&format!("{text}\n"));
-    } else {
-        ctx.out(&format!("{}\n", t.id));
+/// The ticket `set_fields` validates, rebuilt only so error messages can
+/// point at the right field (the core's `apply_all`: remove, then append).
+fn message_candidate(
+    t: &Ticket,
+    title: &Option<String>,
+    status: &Option<String>,
+    assigns: &[Assignment],
+) -> Ticket {
+    let mut c = t.clone();
+    if let Some(x) = title {
+        c.title = x.clone();
     }
+    if let Some(x) = status {
+        c.status = x.clone();
+    }
+    for a in assigns {
+        c.fields.retain(|e| e.name != a.name);
+        if let Some(v) = &a.value {
+            c.fields.push(FieldEntry {
+                name: a.name.clone(),
+                value: v.clone(),
+            });
+        }
+    }
+    c
 }

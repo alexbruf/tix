@@ -1,11 +1,10 @@
 //! `tix detach` (TIX-20).
 
-use crate::app::{load_ticket, load_valid_schema, resolve_folder, save_ticket, ticket_json};
+use crate::app::{emit_ticket, load_ticket, load_valid_schema, resolve_folder, save_ticket};
 use crate::host::{CmdResult, Ctx, Failure, Host};
 use crate::messages::ticket_error;
 use clap::ArgMatches;
 use tix_core::ops::{detach, DetachError};
-use tix_core::{Schema, Ticket};
 
 pub fn run<H: Host>(ctx: &mut Ctx<H>, m: &ArgMatches) -> CmdResult {
     let schema = load_valid_schema(ctx)?;
@@ -19,7 +18,7 @@ pub fn run<H: Host>(ctx: &mut Ctx<H>, m: &ArgMatches) -> CmdResult {
     match detach(t, &schema, &target, now) {
         Ok(t2) => {
             save_ticket(ctx, &schema, &t2)?;
-            emit(ctx, &schema, &t2);
+            emit_ticket(ctx, &schema, &t2);
             Ok(())
         }
         Err(DetachError::NoMatch) => Err(Failure::validation(format!(
@@ -29,16 +28,11 @@ pub fn run<H: Host>(ctx: &mut Ctx<H>, m: &ArgMatches) -> CmdResult {
             "'{target}' matches more than one deliverable"
         ))),
         Err(DetachError::Invalid(e)) => {
-            Err(Failure::validation(ticket_error(&original, &schema, &e)))
+            let mut candidate = original;
+            candidate
+                .deliverables
+                .retain(|d| d.reference != target && d.label != target);
+            Err(Failure::validation(ticket_error(&candidate, &schema, &e)))
         }
-    }
-}
-
-fn emit<H: Host>(ctx: &mut Ctx<H>, schema: &Schema, t: &Ticket) {
-    if ctx.json {
-        let text = serde_json::Value::Object(ticket_json(t, schema)).to_string();
-        ctx.out(&format!("{text}\n"));
-    } else {
-        ctx.out(&format!("{}\n", t.id));
     }
 }
