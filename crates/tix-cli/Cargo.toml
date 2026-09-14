@@ -1,5 +1,5 @@
 [package]
-name = "tix-wasi"
+name = "tix-cli"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -7,3 +7,7 @@ license.workspace = true
 [dependencies]
 getrandom = "0.4.3"
 tix-io = { version = "0.1.0", path = "../tix-io" }
+
+[[bin]]
+name = "tix"
+path = "src/main.rs"

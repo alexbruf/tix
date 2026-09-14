@@ -508,6 +508,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "tix-cli"
+version = "0.1.0"
+dependencies = [
+ "getrandom 0.4.3",
+ "tix-io",
+]
+
+[[package]]
 name = "tix-core"
 version = "0.1.0"
 dependencies = [
@@ -526,14 +534,6 @@ dependencies = [
  "serde_yaml",
  "tix-core",
  "ulid",
-]
-
-[[package]]
-name = "tix-wasi"
-version = "0.1.0"
-dependencies = [
- "getrandom 0.4.3",
- "tix-io",
 ]
 
 [[package]]

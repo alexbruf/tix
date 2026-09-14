@@ -1,4 +1,4 @@
-//! Standalone `tix` for WASI (`wasm32-wasip1`) and native targets: the same
+//! Standalone `tix` binary for native targets and WASI (`wasm32-wasip1`): the same
 //! tix-io commands with the host implemented over `std` instead of JavaScript.
 //! Not part of the npm package (TIX-29); built for `wasmer run` / `wasmtime`.
 
@@ -71,7 +71,10 @@ impl Host for StdHost {
     }
 
     fn now_unix(&mut self) -> u64 {
-        SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0)
     }
 
     fn random_bytes(&mut self, n: usize) -> Vec<u8> {
@@ -86,7 +89,11 @@ impl Host for StdHost {
 fn cwd() -> String {
     let raw = std::env::var("TIX_CWD")
         .ok()
-        .or_else(|| std::env::current_dir().ok().map(|p| p.to_string_lossy().into_owned()))
+        .or_else(|| {
+            std::env::current_dir()
+                .ok()
+                .map(|p| p.to_string_lossy().into_owned())
+        })
         .unwrap_or_else(|| "/".to_string());
     raw.replace('\\', "/")
 }

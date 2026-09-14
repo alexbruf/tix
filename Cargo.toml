@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/tix-core", "crates/tix-io", "crates/tix-wasi", "crates/tix-wasm"]
+members = ["crates/tix-core", "crates/tix-io", "crates/tix-cli", "crates/tix-wasm"]
 
 [workspace.package]
 version = "0.1.0"
