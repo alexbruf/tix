@@ -1,0 +1,5 @@
+$ tix board bogus
+exit: 2
+--- stdout
+--- stderr
+filter 'bogus' is not KEY:VALUE
