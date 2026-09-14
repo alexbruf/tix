@@ -66,9 +66,9 @@ jobs:
           npm pack
           TARBALL="$PWD/$(ls viewengine-tix-*.tgz)"
           mkdir -p "$RUNNER_TEMP/clean" && cd "$RUNNER_TEMP/clean"
-          npx --yes "$TARBALL" init
-          npx --yes "$TARBALL" new --title x --client y --type article --no-prompt
-          npx --yes "$TARBALL" board
+          npx --yes --package="$TARBALL" tix init
+          npx --yes --package="$TARBALL" tix new --title x --client y --type article --no-prompt
+          npx --yes --package="$TARBALL" tix board
 
   publish:
     needs: [build, package]
