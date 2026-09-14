@@ -1,0 +1,5 @@
+$ tix set 01K5AQ owner=a owner=b
+exit: 2
+--- stdout
+--- stderr
+key 'owner' given more than once
