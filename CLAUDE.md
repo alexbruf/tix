@@ -15,7 +15,7 @@ File-based ticket board CLI. Rust core verified with Verus, compiled to wasm, wr
 Cargo.toml                 workspace
 rust-toolchain.toml        pinned to the toolchain the pinned Verus release needs
 crates/tix-core/           VERIFIED. Deps: vstd, verus_builtin, verus_builtin_macros only
-crates/tix-io/             clap, serde_yaml, gray_matter, comfy-table, ulid, Storage trait
+crates/tix-io/             clap, serde_yaml, comfy-table, ulid, Storage trait, commands, help text
 crates/tix-wasm/           wasm-bindgen glue, exports run(argv, cwd) -> u32
 crates/tix-cli/            standalone `tix` binary (native or wasm32-wasip1), host over std; not in npm
 bin/tix.js                 Node host (~150 lines), FsAdapter over node:fs
