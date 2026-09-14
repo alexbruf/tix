@@ -99,4 +99,6 @@ Follows the order of work in `docs/HANDOFF.md`. Each step ends with a green gate
 - Id `NotFound` and `TooShort` exit 2, same as `Ambiguous` (usage error class).
 - TIX-4 "exactly these imports" is read as the user-level imports; wasm-bindgen's internal `__wbindgen_*` shims are not counted.
 - `serde_yaml` is archived upstream but is named by the handoff, so it is used as-is (0.9).
+- **Fourth crate `tix-cli` (user request, 2026-09-14):** a standalone `tix` executable. Wasmer removed `create-exe`, so the user chose a native Rust build; the same crate also builds for `wasm32-wasip1` (runs under wasmtime `--dir=.` or wasmer `--volume .:/ws --env TIX_CWD=/ws`). It is not part of the npm package, which stays pure wasm (TIX-29).
+- `--help` (long) is written for AI agents; `-h` stays a short summary.
 - `tix-spec-html.zip` is a rendering of `tix.sdoc`; not committed.

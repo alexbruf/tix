@@ -1,0 +1,20 @@
+version: 1
+statuses:
+  - name: backlog
+    group: backlog
+  - name: in_progress
+    group: in_progress
+  - name: done
+    group: completed
+fields:
+  - name: client
+    type: string
+    required: true
+  - name: type
+    type: enum
+    values: [article, landing_page, linkedin, other]
+    required: true
+  - name: owner
+    type: string
+  - name: due
+    type: date
