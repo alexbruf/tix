@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+target/
+pkg/
+.claude/
+*.tgz
+.DS_Store

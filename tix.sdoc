@@ -1,0 +1,561 @@
+[DOCUMENT]
+TITLE: tix: file-based ticket board for content work
+UID: TIX
+VERSION: 0.1
+DATE: 2026-09-14
+PREFIX: TIX-
+OPTIONS:
+  MARKUP: Markdown
+  AUTO_LEVELS: On
+  VIEW_STYLE: Narrative
+  NODE_IN_TOC: True
+
+[GRAMMAR]
+ELEMENTS:
+- TAG: REQUIREMENT
+  FIELDS:
+  - TITLE: UID
+    TYPE: String
+    REQUIRED: True
+  - TITLE: STATUS
+    TYPE: SingleChoice(Draft, Active, Deferred)
+    REQUIRED: False
+  - TITLE: TITLE
+    TYPE: String
+    REQUIRED: True
+  - TITLE: STATEMENT
+    TYPE: String
+    REQUIRED: True
+  - TITLE: RATIONALE
+    TYPE: String
+    REQUIRED: False
+  - TITLE: VERIFICATION
+    TYPE: SingleChoice(Proof, Test, Inspection)
+    REQUIRED: True
+  RELATIONS:
+  - TYPE: Parent
+
+[[SECTION]]
+TITLE: Purpose and scope
+
+[TEXT]
+STATEMENT: >>>
+`tix` is a command-line ticket board for content production. A ticket is a form with defined fields, moves through user-defined statuses, and carries references to deliverables. There is no database and no server: a workspace is a folder of Markdown files with YAML frontmatter, and the schema is one YAML file next to them.
+
+The core is written in Rust, compiled to WebAssembly, and its pure logic is proved with Verus. A thin Node host provides argv, prompts, and a filesystem adapter. Distribution is one npm package.
+
+Scope is deliberately small: one workspace, one board, no users, no permissions, no sync. Anything that needs coordination between machines is out of scope for v1.
+
+**Decisions already made (not open for the implementation):**
+
+- Plain CLI, no TUI.
+- Rust core compiled to wasm from day one; verified with Verus.
+- File-based storage; no libsql, no SQLite.
+- Filesystem access goes through one adapter interface so the same wasm runs on Node (real disk), and later on OPFS or an object store.
+- One folder per ticket; deliverables are references (URL or path), never copies.
+- Statuses and required fields are user-defined in the schema; every status belongs to one of three fixed groups: `backlog`, `in_progress`, `completed`.
+- Use existing libraries wherever the code is not part of the verified core.
+<<<
+
+[REQUIREMENT]
+UID: TIX-1
+STATUS: Active
+TITLE: Non-goals for v1
+STATEMENT: >>>
+v1 SHALL NOT implement: multi-user access, locking, sync, a TUI, a web UI, attachments stored inside the workspace, ticket relations (parent/child, blocking), comments, history, or per-status transition rules. Any status MAY move to any other status.
+<<<
+RATIONALE: >>>
+Each of these adds a coordination or UI surface that is expensive to verify and none is needed to run a content pipeline for one team from a shared folder.
+<<<
+VERIFICATION: Inspection
+
+[[/SECTION]]
+
+[[SECTION]]
+TITLE: Architecture
+
+[TEXT]
+STATEMENT: >>>
+```
+┌──────────────────────────────────────────────────────────────┐
+│ npm package  @viewengine/tix                                 │
+│                                                              │
+│  bin/tix.js  (Node host, ~150 lines)                         │
+│    argv, cwd, env ──────────────┐                            │
+│    prompt(), stdout(), stderr() │  wasm-bindgen imports      │
+│    FsAdapter (node:fs)          │                            │
+│                                 ▼                            │
+│  tix_wasm  (Rust, wasm32-unknown-unknown)                    │
+│    ├─ tix-io    unverified: clap, serde_yaml, gray_matter,   │
+│    │            comfy-table, ulid; all I/O through Storage   │
+│    └─ tix-core  VERIFIED (Verus): schema, ticket, transition,│
+│                 filter, board; plain Rust types only         │
+└──────────────────────────────────────────────────────────────┘
+```
+
+Three crates in one Cargo workspace:
+
+- `tix-core`: pure functions over plain data (`String`, `Vec`, structs, enums). No I/O, no external crates other than `vstd`. Every public function carries a Verus spec and the crate is verified in CI.
+- `tix-io`: everything that touches bytes: argv parsing (clap), YAML and frontmatter (serde_yaml + gray_matter), table rendering (comfy-table), ULID generation, and the `Storage` trait. Not verified; covered by tests.
+- `tix-wasm`: wasm-bindgen glue that exposes `run(argv, cwd) -> exit_code` and imports the host functions.
+<<<
+
+[REQUIREMENT]
+UID: TIX-2
+STATUS: Active
+TITLE: Verified core has no dependencies
+STATEMENT: >>>
+`tix-core` SHALL depend on no crate other than `vstd` and `builtin`/`builtin_macros` from Verus. It SHALL compile with plain `cargo build` (Verus annotations erase) and SHALL verify with `cargo verus verify` with zero errors. CI SHALL fail on any verification error.
+<<<
+RATIONALE: >>>
+Verus cannot see into external crates; keeping serde, clap and friends out of the core is what makes "prove everything that is not an external API" achievable.
+<<<
+VERIFICATION: Inspection
+
+[REQUIREMENT]
+UID: TIX-3
+STATUS: Active
+TITLE: All I/O goes through the Storage trait
+STATEMENT: >>>
+`tix-io` SHALL perform all filesystem access through a single trait:
+
+```rust
+pub trait Storage {
+    fn read(&self, path: &str) -> Result<Option<Vec<u8>>, IoError>;
+    fn write(&mut self, path: &str, bytes: &[u8]) -> Result<(), IoError>;
+    fn list_dir(&self, path: &str) -> Result<Vec<String>, IoError>;
+    fn mkdir_all(&mut self, path: &str) -> Result<(), IoError>;
+    fn exists(&self, path: &str) -> Result<bool, IoError>;
+}
+```
+
+Paths are workspace-relative, `/`-separated, and never contain `..`. The wasm crate implements `Storage` by calling host-provided functions with the same five names.
+<<<
+RATIONALE: >>>
+Five functions are enough for a folder of small text files and are trivially implementable over node:fs, OPFS, or an S3 listing.
+<<<
+VERIFICATION: Test
+
+[REQUIREMENT]
+UID: TIX-4
+STATUS: Active
+TITLE: Host interface
+STATEMENT: >>>
+The wasm module SHALL import exactly these host functions and nothing else:
+
+| Import | Signature | Purpose |
+|---|---|---|
+| `fs_read` | `(path) -> bytes \| null` | Storage::read |
+| `fs_write` | `(path, bytes)` | Storage::write |
+| `fs_list_dir` | `(path) -> string[]` | Storage::list_dir |
+| `fs_mkdir_all` | `(path)` | Storage::mkdir_all |
+| `fs_exists` | `(path) -> bool` | Storage::exists |
+| `prompt` | `(label, kind, options[]) -> string \| null` | interactive field entry |
+| `stdout` | `(text)` | normal output |
+| `stderr` | `(text)` | errors and warnings |
+| `now_unix` | `() -> u64` | timestamps |
+| `random_bytes` | `(n) -> bytes` | ULID entropy |
+
+The module SHALL export `run(argv: string[], cwd: string) -> u32` returning the process exit code.
+<<<
+VERIFICATION: Test
+
+[REQUIREMENT]
+UID: TIX-5
+STATUS: Active
+TITLE: v1 host is Node with the real filesystem
+STATEMENT: >>>
+v1 SHALL ship one host: Node.js 20+, `FsAdapter` over `node:fs`, `prompt` over `node:readline`. OPFS and object-store adapters are out of scope for v1 but SHALL require no change to the wasm module, only a new JavaScript `FsAdapter`.
+<<<
+VERIFICATION: Inspection
+
+[[/SECTION]]
+
+[[SECTION]]
+TITLE: Workspace layout
+
+[REQUIREMENT]
+UID: TIX-6
+STATUS: Active
+TITLE: Workspace on disk
+STATEMENT: >>>
+A workspace is a directory containing:
+
+```
+tix.yaml                 # schema and settings (see TIX-8)
+tickets/
+  01K5AQ9Z3R7M8N2P4Q6S8T0V1W/
+    ticket.md            # frontmatter + freeform body
+```
+
+`tix` SHALL locate the workspace by walking up from `cwd` until it finds `tix.yaml`; if none is found every command except `init` SHALL exit 2 with `no tix.yaml found`.
+<<<
+VERIFICATION: Test
+
+[REQUIREMENT]
+UID: TIX-7
+STATUS: Active
+TITLE: Ticket identity
+STATEMENT: >>>
+A ticket id SHALL be a ULID (26 chars, Crockford base32, uppercase), generated by `tix-io` from `now_unix` and `random_bytes`. The ticket folder name SHALL equal the id. Any command that takes an id SHALL accept a unique prefix of at least 4 characters; an ambiguous prefix SHALL exit 2 listing the candidates.
+<<<
+RATIONALE: >>>
+ULIDs need no counter file, so two machines writing to a shared folder cannot collide; prefixes keep them typeable.
+<<<
+VERIFICATION: Proof
+
+[[/SECTION]]
+
+[[SECTION]]
+TITLE: Schema
+
+[REQUIREMENT]
+UID: TIX-8
+STATUS: Active
+TITLE: tix.yaml format
+STATEMENT: >>>
+`tix.yaml` SHALL have this shape; `tix init` writes exactly this default:
+
+```yaml
+version: 1
+statuses:
+  - name: backlog
+    group: backlog
+  - name: in_progress
+    group: in_progress
+  - name: done
+    group: completed
+fields:
+  - name: client
+    type: string
+    required: true
+  - name: type
+    type: enum
+    values: [article, landing_page, linkedin, other]
+    required: true
+  - name: owner
+    type: string
+  - name: due
+    type: date
+```
+
+Field `type` SHALL be one of `string`, `enum`, `date` (ISO 8601 `YYYY-MM-DD`), `list` (list of strings). `required` defaults to `false`. `enum` fields MUST declare `values`. A field MAY declare `default`, which MUST itself be a valid value for that field.
+<<<
+VERIFICATION: Test
+
+[REQUIREMENT]
+UID: TIX-9
+STATUS: Active
+TITLE: Schema validity
+STATEMENT: >>>
+`tix-core::Schema::validate` SHALL accept a schema if and only if all of the following hold:
+
+1. `statuses` is non-empty and every `name` is unique.
+2. Every status `group` is one of `backlog`, `in_progress`, `completed`.
+3. At least one status has group `backlog` (the first such status is the default for new tickets).
+4. Every field `name` is unique, matches `[a-z][a-z0-9_]*`, and is not one of the built-in names `id`, `title`, `status`, `created`, `updated`, `deliverables`.
+5. Every `enum` field has at least one value and values are unique.
+6. Every `default` is valid for its field per TIX-11.
+
+Any other schema SHALL be rejected with an error naming the first violated rule.
+<<<
+VERIFICATION: Proof
+
+[REQUIREMENT]
+UID: TIX-10
+STATUS: Active
+TITLE: Schema changes never break reads
+STATEMENT: >>>
+Editing `tix.yaml` SHALL NOT be a migration. After a schema change, tickets that no longer validate SHALL still load, list, and show; `ls`, `show` and `board` SHALL mark them with `!` and `board` SHALL place tickets with an unknown status in a synthetic last column named `?`. Only `new`, `set`, `mv`, `attach` and `detach` SHALL refuse to write a ticket that would be invalid after the write.
+<<<
+RATIONALE: >>>
+The user changes statuses and required fields freely; the tool's job is to show what no longer fits and let them repair it with `set` or `mv`, never to hide or refuse to read data.
+<<<
+VERIFICATION: Test
+
+[[/SECTION]]
+
+[[SECTION]]
+TITLE: Ticket
+
+[REQUIREMENT]
+UID: TIX-11
+STATUS: Active
+TITLE: Ticket validity
+STATEMENT: >>>
+`tix-core::Ticket::validate(&schema)` SHALL accept a ticket if and only if:
+
+1. `id` is a well-formed ULID and `title` is non-empty.
+2. `status` is the `name` of a status in the schema.
+3. Every field marked `required` is present and non-empty.
+4. Every present field is declared in the schema and its value has the declared type: `enum` value is in `values`; `date` matches `YYYY-MM-DD` with a valid calendar date; `list` is a list of non-empty strings; `string` is any non-empty string.
+5. `deliverables` is a list of `{label, ref}` where both are non-empty and no two entries share a `ref`.
+<<<
+VERIFICATION: Proof
+
+[REQUIREMENT]
+UID: TIX-12
+STATUS: Active
+TITLE: ticket.md format
+STATEMENT: >>>
+`ticket.md` SHALL be UTF-8 Markdown with a YAML frontmatter block delimited by `---` lines. Built-in keys `id`, `title`, `status`, `created`, `updated` (RFC 3339 UTC) and `deliverables` come first in that order, then schema fields in schema order. The body after the frontmatter is the freeform brief and SHALL be preserved byte-for-byte by every command that rewrites the file.
+
+Example:
+
+```markdown
+---
+id: 01K5AQ9Z3R7M8N2P4Q6S8T0V1W
+title: Nova product comparison article
+status: in_progress
+created: 2026-09-14T15:02:11Z
+updated: 2026-09-15T09:40:00Z
+deliverables:
+  - label: draft
+    ref: https://docs.google.com/document/d/abc
+  - label: outline
+    ref: ./outline.md
+client: nova
+type: article
+owner: charlie
+due: 2026-09-30
+---
+Brief goes here. Anything Markdown.
+```
+<<<
+VERIFICATION: Test
+
+[REQUIREMENT]
+UID: TIX-13
+STATUS: Active
+TITLE: Deliverables are references
+STATEMENT: >>>
+A deliverable `ref` SHALL be stored verbatim as given. `tix` SHALL NOT copy, download, or verify the target. A `ref` beginning with `./` is understood as relative to the ticket folder; all other strings are opaque (URLs, Drive links, absolute paths, ids in other tools). `label` defaults to the last path segment of `ref` when omitted.
+<<<
+VERIFICATION: Test
+
+[[/SECTION]]
+
+[[SECTION]]
+TITLE: Commands
+
+[TEXT]
+STATEMENT: >>>
+Global flags on every command: `--json` (machine output, one JSON document on stdout), `--no-prompt` (never prompt; missing required input is an error). Exit codes: `0` ok, `1` validation error, `2` usage or workspace error, `3` I/O error.
+<<<
+
+[REQUIREMENT]
+UID: TIX-14
+STATUS: Active
+TITLE: tix init
+STATEMENT: >>>
+`tix init` SHALL create `tix.yaml` (default from TIX-8) and `tickets/` in `cwd`. It SHALL exit 2 without writing if `tix.yaml` already exists at or above `cwd`.
+<<<
+VERIFICATION: Test
+
+[REQUIREMENT]
+UID: TIX-15
+STATUS: Active
+TITLE: tix new
+STATEMENT: >>>
+`tix new [--title T] [--<field> VALUE ...] [--status S]` SHALL create one ticket. Any required field not given as a flag SHALL be requested via `prompt` (enum fields pass their `values` as options). Optional fields SHALL NOT be prompted. `status` defaults to the first `backlog` status. `created` and `updated` are set to `now_unix`. The resulting ticket SHALL validate per TIX-11 before anything is written; on success stdout is the new id.
+<<<
+VERIFICATION: Proof
+
+[REQUIREMENT]
+UID: TIX-16
+STATUS: Active
+TITLE: tix ls
+STATEMENT: >>>
+`tix ls [FILTER ...]` SHALL print one row per matching ticket: short id (first 8 chars), status, title, then every required field, in a table. Filters are `KEY:VALUE` tokens ANDed together where KEY is `status`, `group`, or any schema field; `list` fields match if any element equals VALUE. Rows are sorted by status order in the schema, then `created` ascending. Invalid tickets (TIX-10) are shown with a leading `!`.
+<<<
+VERIFICATION: Proof
+
+[REQUIREMENT]
+UID: TIX-17
+STATUS: Active
+TITLE: tix show
+STATEMENT: >>>
+`tix show ID` SHALL print every frontmatter key and value, the deliverables as `label -> ref` lines, and then the body verbatim. With `--json` the frontmatter plus a `body` string.
+<<<
+VERIFICATION: Test
+
+[REQUIREMENT]
+UID: TIX-18
+STATUS: Active
+TITLE: tix mv
+STATEMENT: >>>
+`tix mv ID STATUS` SHALL set `status` to STATUS and `updated` to now, changing nothing else. STATUS not in the schema SHALL exit 1 listing valid statuses. Any status may move to any status.
+<<<
+VERIFICATION: Proof
+
+[REQUIREMENT]
+UID: TIX-19
+STATUS: Active
+TITLE: tix set
+STATEMENT: >>>
+`tix set ID KEY=VALUE [KEY=VALUE ...]` SHALL update the named fields (`title` or any schema field) and `updated`, changing nothing else. `KEY=` with an empty value removes an optional field and is an error for a required one. All assignments are applied together; if the result is invalid nothing is written.
+<<<
+VERIFICATION: Proof
+
+[REQUIREMENT]
+UID: TIX-20
+STATUS: Active
+TITLE: tix attach and detach
+STATEMENT: >>>
+`tix attach ID REF [--label L]` SHALL append one deliverable; a REF already present SHALL exit 1. `tix detach ID REF_OR_LABEL` SHALL remove the single deliverable whose `ref` or `label` equals the argument; no match SHALL exit 1. Both set `updated` and change nothing else.
+<<<
+VERIFICATION: Proof
+
+[REQUIREMENT]
+UID: TIX-21
+STATUS: Active
+TITLE: tix board
+STATEMENT: >>>
+`tix board [FILTER ...]` SHALL print one column per status in schema order, header `STATUS (n)`, each cell `shortid title`, cells sorted by `created` ascending, plus a trailing `?` column when any ticket has an unknown status. `--group` SHALL collapse columns to the three groups instead. Filters as in TIX-16.
+<<<
+VERIFICATION: Proof
+
+[REQUIREMENT]
+UID: TIX-22
+STATUS: Active
+TITLE: tix check
+STATEMENT: >>>
+`tix check` SHALL validate `tix.yaml` (TIX-9) and every ticket (TIX-11), print one line per problem as `PATH: MESSAGE`, and exit 1 if any problem exists, else print `ok` and exit 0. This is the command to run after editing `tix.yaml`.
+<<<
+VERIFICATION: Test
+
+[REQUIREMENT]
+UID: TIX-23
+STATUS: Active
+TITLE: tix path
+STATEMENT: >>>
+`tix path ID` SHALL print the workspace-relative path of the ticket folder, so shells can `cd "$(tix path 01K5)"` or open `ticket.md` in an editor. `tix` SHALL NOT open editors itself.
+<<<
+VERIFICATION: Test
+
+[[/SECTION]]
+
+[[SECTION]]
+TITLE: Verified properties
+
+[TEXT]
+STATEMENT: >>>
+These are the Verus `ensures` clauses the core SHALL carry. Together they replace unit tests for `tix-core`; the io crate is tested, not proved. Spec functions `valid_schema(s)` and `valid_ticket(t, s)` are the formal forms of TIX-9 and TIX-11.
+<<<
+
+[REQUIREMENT]
+UID: TIX-24
+STATUS: Active
+TITLE: Validation is sound and complete against the spec
+STATEMENT: >>>
+`Schema::validate(s) is Ok() <==> valid_schema(s)` and `Ticket::validate(t, s) is Ok() <==> valid_ticket(t, s)`. The executable checks and the spec predicates SHALL be proven equivalent, not merely one-directional.
+<<<
+VERIFICATION: Proof
+
+[REQUIREMENT]
+UID: TIX-25
+STATUS: Active
+TITLE: Writes preserve validity and touch only what they name
+STATEMENT: >>>
+For `new_ticket`, `transition` (mv), `set_fields`, `attach`, `detach`, with precondition `valid_schema(s)` and (except `new_ticket`) `valid_ticket(t, s)`:
+
+- On `Ok(t2)`: `valid_ticket(t2, s)`, `t2.id == t.id`, `t2.created == t.created`, `t2.body == t.body`, `t2.updated == now`, and every field not named by the operation is unchanged.
+- On `Err`: the returned error names a rule from TIX-11 that `t2` would have violated.
+- `transition`: `t2.status == to`.
+- `attach`: `t2.deliverables.len() == t.deliverables.len() + 1` and the last element is the new one.
+- `detach`: `t2.deliverables.len() == t.deliverables.len() - 1` and no remaining element matches the argument.
+- `new_ticket`: `t2.status` is the first `backlog` status of `s` unless overridden by a valid status.
+<<<
+VERIFICATION: Proof
+
+[REQUIREMENT]
+UID: TIX-26
+STATUS: Active
+TITLE: Board is a partition
+STATEMENT: >>>
+`board(tickets, s)` SHALL return columns such that every input ticket appears in exactly one column, columns are in schema status order followed by `?`, a ticket is in column `c` iff `t.status == c.name` (or in `?` iff its status is not in `s`), and within a column tickets are ordered by `created` ascending, ties by `id`.
+<<<
+VERIFICATION: Proof
+
+[REQUIREMENT]
+UID: TIX-27
+STATUS: Active
+TITLE: Filter is a faithful subset
+STATEMENT: >>>
+`filter(tickets, q)` SHALL return exactly the tickets `t` for which `matches(t, q)` holds, in the input order. `matches` is the conjunction over tokens of: `status:v` iff `t.status == v`; `group:v` iff the group of `t.status` in `s` is `v`; `k:v` for a `list` field iff `v` is an element; `k:v` otherwise iff the field equals `v`. A token whose key is unknown SHALL be a parse error, never a silent non-match.
+<<<
+VERIFICATION: Proof
+
+[REQUIREMENT]
+UID: TIX-28
+STATUS: Active
+TITLE: Prefix resolution
+STATEMENT: >>>
+`resolve(prefix, ids)` SHALL return `Ok(id)` iff exactly one id in `ids` starts with `prefix` and `prefix.len() >= 4`; `Err(Ambiguous(candidates))` iff more than one does, with `candidates` being exactly the matching set; `Err(NotFound)` iff none does; `Err(TooShort)` iff `prefix.len() < 4`.
+<<<
+VERIFICATION: Proof
+
+[[/SECTION]]
+
+[[SECTION]]
+TITLE: Distribution
+
+[REQUIREMENT]
+UID: TIX-29
+STATUS: Active
+TITLE: npm package
+STATEMENT: >>>
+The product SHALL be one npm package, `@viewengine/tix`, containing `bin/tix.js` (host), `dist/tix_wasm.js` and `dist/tix_wasm_bg.wasm` (wasm-bindgen, target `nodejs`), and no native code and no postinstall step. `npx @viewengine/tix init` SHALL work on macOS, Linux and Windows with Node 20+ and nothing else installed.
+<<<
+RATIONALE: >>>
+A pure-wasm package has one artifact for every platform; there is nothing to compile on the user's machine and nothing to sign per OS.
+<<<
+VERIFICATION: Test
+
+[REQUIREMENT]
+UID: TIX-30
+STATUS: Active
+TITLE: Build pipeline
+STATEMENT: >>>
+CI SHALL run, in order: `cargo verus verify -p tix-core`; `cargo test --workspace` (io crate, native target); `wasm-pack build crates/tix-wasm --target nodejs --release`; the Node integration suite (TIX-31); `npm publish` on tags. Any failing step blocks publish.
+<<<
+VERIFICATION: Inspection
+
+[[/SECTION]]
+
+[[SECTION]]
+TITLE: Testing
+
+[REQUIREMENT]
+UID: TIX-31
+STATUS: Active
+TITLE: What is tested rather than proved
+STATEMENT: >>>
+Tests SHALL cover only what the proofs cannot:
+
+1. `tix-io` round trip: for generated valid tickets, `parse(render(t)) == t` and the body is byte-identical (property test, `proptest`).
+2. Schema YAML parsing: the TIX-8 default and each rejection case of TIX-9 produce the expected core error.
+3. Node integration: a fixture workspace and a golden-file test per command in TIX-14 through TIX-23, run through the real wasm module and `bin/tix.js`, asserting stdout, stderr, exit code, and the resulting files.
+4. Host contract: a fake `FsAdapter` recording calls, asserting each command performs only the reads and writes it needs and never writes on a validation error.
+
+No test SHALL re-check a property already stated in TIX-24 through TIX-28.
+<<<
+VERIFICATION: Test
+
+[[/SECTION]]
+
+[[SECTION]]
+TITLE: Deferred
+
+[TEXT]
+STATEMENT: >>>
+Recorded so they are not re-debated; none is in v1.
+
+- OPFS and S3 `FsAdapter`s (host only, no wasm change).
+- Per-status allowed transitions in `tix.yaml`.
+- `tix edit ID` opening `$EDITOR` from the host.
+- Obsidian: the layout is already readable by Obsidian and its Kanban plugin can be pointed at `tickets/`; no work planned.
+- Ticket relations, comments, history, assignees as a `person` type.
+<<<
+
+[[/SECTION]]

@@ -1,0 +1,78 @@
+# tix build plan
+
+Follows the order of work in `docs/HANDOFF.md`. Each step ends with a green gate and a commit on `build/v1`.
+
+## Step 0: Toolchain and repo (done in this commit, minus Verus install)
+
+- git repo, `CLAUDE.md`, this plan, spec and handoff copied in.
+- Install Verus release `0.2026.09.13.671956e` (arm64-macos locally, x86-linux in CI). Pin its required Rust toolchain in `rust-toolchain.toml`.
+- Gate: `verus --version` and `cargo verus --help` run.
+
+## Step 1: Workspace skeleton and green CI
+
+- Cargo workspace with `tix-core`, `tix-io`, `tix-wasm` as empty crates that compile.
+- `bin/tix.js` stub, `package.json` (`@viewengine/tix`, `bin`, `files`, `engines.node >=20`, no postinstall).
+- `.github/workflows/ci.yml`: verus verify, cargo test, wasm-pack build, node test, publish on tags (TIX-30).
+- Gate: all four local commands pass on the empty core.
+- Owner: main session (small, sets conventions).
+
+## Step 2: tix-core types and validation (TIX-9, TIX-11, TIX-24)
+
+- Types: `Group`, `Status`, `FieldType`, `Field`, `Schema`, `FieldValue` (Str / List), `Deliverable`, `Ticket`, error enums naming the rule number.
+- Spec fns: `valid_ulid`, `valid_date`, `valid_field_name`, `valid_schema`, `valid_ticket`.
+- `Schema::validate` and `Ticket::validate` with `ensures result is Ok <==> valid_*`, and error variant = first violated rule.
+- Gate: `cargo verus verify -p tix-core` zero errors; `cargo build -p tix-core` passes.
+- Owner: main session.
+
+## Step 3: tix-core operations (TIX-7, TIX-15..21 core parts, TIX-25..28)
+
+- `new_ticket`, `transition`, `set_fields`, `attach`, `detach` with TIX-25 ensures.
+- `resolve(prefix, ids)` (TIX-28), `filter` + `parse_query` (TIX-27), `sort_for_ls` (TIX-16), `board` + group mode (TIX-26, TIX-21).
+- Gate: verify green.
+- Owner: main session, one proof at a time.
+
+## Step 4: tix-io parsing and storage (TIX-3, TIX-6, TIX-8, TIX-12, TIX-13, TIX-31.1, TIX-31.2)
+
+- `tix.yaml` parse/render via serde_yaml into core `Schema`.
+- `ticket.md` parse/render: frontmatter via gray_matter + serde_yaml, fixed key order, body byte-exact.
+- `Storage` trait, `MemStorage` for tests, workspace discovery walking up from cwd.
+- ULID from `now_unix` + `random_bytes` via `ulid::Ulid::from_parts`.
+- proptest round trip (31.1); schema rejection cases (31.2).
+- Gate: `cargo test --workspace`.
+- Owner: Sonnet subagent, main session reviews.
+
+## Step 5: tix-io commands (TIX-14..23)
+
+- clap command tree, global `--json` and `--no-prompt`, exit-code mapping.
+- Order: `init`, `check`, `new`, `ls`, `show`, `mv`, `set`, `attach`, `detach`, `board`, `path`. Golden-file test per command against `MemStorage`.
+- Gate: `cargo test --workspace`; native binary usable as fallback.
+- Owner: Sonnet subagents, split into two parallel batches over disjoint files (read commands / write commands) after a shared `cli.rs` skeleton lands.
+
+## Step 6: wasm and Node host (TIX-4, TIX-5, TIX-31.3, TIX-31.4)
+
+- `tix-wasm`: the ten imports, `run(argv, cwd) -> u32`, `Storage` impl over imports.
+- `bin/tix.js`: FsAdapter over `node:fs`, prompt, stdout/stderr, clock, crypto random.
+- Node suite: fixture workspace + golden files per command through real wasm; fake FsAdapter recording calls (no writes on validation error).
+- Gate: full TIX-30 pipeline green locally. Then merge `build/v1` to `main`.
+- Owner: Sonnet subagent for host + suite; main session for wasm glue.
+
+## Step 7: Packaging (TIX-29)
+
+- `npm pack`, install tarball into a clean temp dir, run the definition-of-done command chain.
+- CI matrix on macOS, Linux, Windows with Node 20.
+- Publishing waits for user approval.
+
+## Open questions (need the user)
+
+1. **TIX-4 vs TIX-5, prompt is sync but `node:readline` is async.** `run` returns `u32` and `prompt` returns `string | null` synchronously, which `node:readline` cannot do. See the question put to the user.
+
+## Decisions (spec is silent; recorded, not asked)
+
+- `?` board column appears only when non-empty (TIX-21 wording wins over TIX-26's).
+- With `--group`, unknown-status tickets still go to a trailing `?` column.
+- `filter` takes the schema as an extra argument, since `group:v` needs it (TIX-27).
+- ULID well-formed = 26 chars, Crockford base32 uppercase, first char `0`..`7` (no 128-bit overflow).
+- Id `NotFound` and `TooShort` exit 2, same as `Ambiguous` (usage error class).
+- TIX-4 "exactly these imports" is read as the user-level imports; wasm-bindgen's internal `__wbindgen_*` shims are not counted.
+- `serde_yaml` is archived upstream but is named by the handoff, so it is used as-is (0.9).
+- `tix-spec-html.zip` is a rendering of `tix.sdoc`; not committed.
