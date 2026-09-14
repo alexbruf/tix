@@ -1,0 +1,5 @@
+# Pinned to the toolchain required by Verus 0.2026.09.13.671956e.
+[toolchain]
+channel = "1.98.1"
+components = ["rustfmt", "clippy"]
+targets = ["wasm32-unknown-unknown"]

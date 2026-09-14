@@ -1,0 +1,89 @@
+# TIX-30 pipeline. Steps run in order; any failure blocks publish.
+name: ci
+on:
+  push:
+    branches: [main, "build/**"]
+    tags: ["v*"]
+  pull_request:
+
+env:
+  VERUS_RELEASE: release/0.2026.09.13.671956e
+  VERUS_ZIP: verus-0.2026.09.13.671956e-x86-linux.zip
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust toolchain (from rust-toolchain.toml)
+        run: rustup show
+      - uses: Swatinem/rust-cache@v2
+      - name: Install Verus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$VERUS_RELEASE" -R verus-lang/verus -p "$VERUS_ZIP" -D "$RUNNER_TEMP"
+          unzip -q "$RUNNER_TEMP/$VERUS_ZIP" -d "$RUNNER_TEMP/verus"
+          echo "$RUNNER_TEMP/verus/verus-x86-linux" >> "$GITHUB_PATH"
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 1. cargo verus verify -p tix-core
+        run: cargo verus verify -p tix-core
+      - name: 2. cargo test --workspace
+        run: cargo test --workspace
+      - name: 3. wasm-pack build
+        run: npm run build:wasm
+      - name: 4. Node integration suite
+        run: npm run test:node
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  # TIX-29: the packed tarball must run on every OS with Node 20 and nothing else.
+  package:
+    needs: build
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Pack and run from a clean directory
+        shell: bash
+        run: |
+          npm pack
+          TARBALL="$PWD/$(ls viewengine-tix-*.tgz)"
+          mkdir -p "$RUNNER_TEMP/clean" && cd "$RUNNER_TEMP/clean"
+          npx --yes "$TARBALL" init
+          npx --yes "$TARBALL" new --title x --client y --type article --no-prompt
+          npx --yes "$TARBALL" board
+
+  publish:
+    needs: [build, package]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+      - run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

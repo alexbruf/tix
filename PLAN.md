@@ -62,11 +62,9 @@ Follows the order of work in `docs/HANDOFF.md`. Each step ends with a green gate
 - CI matrix on macOS, Linux, Windows with Node 20.
 - Publishing waits for user approval.
 
-## Open questions (need the user)
-
-1. **TIX-4 vs TIX-5, prompt is sync but `node:readline` is async.** `run` returns `u32` and `prompt` returns `string | null` synchronously, which `node:readline` cannot do. See the question put to the user.
-
 ## Decisions (spec is silent; recorded, not asked)
+
+- TIX-4 vs TIX-5 (sync `prompt` vs async `node:readline`): the host runs `node:readline` in a `worker_threads` worker and blocks the main thread with `Atomics.wait` on a `SharedArrayBuffer` until the answer arrives. Both requirements hold as written. User approved (2026-09-14).
 
 - `?` board column appears only when non-empty (TIX-21 wording wins over TIX-26's).
 - With `--group`, unknown-status tickets still go to a trailing `?` column.
