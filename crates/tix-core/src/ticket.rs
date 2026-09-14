@@ -100,6 +100,53 @@ pub open spec fn first_ticket_violation(t: Ticket, s: Schema, e: TicketError) ->
     &&& forall|k: int| 1 <= k < e.rule ==> ticket_rule(t, s, k)
 }
 
+/// Validity depends only on the contents of a ticket, not on which `Vec`s hold them.
+pub proof fn lemma_same_contents(a: Ticket, b: Ticket, s: Schema)
+    requires
+        a.id@ == b.id@,
+        a.title@ == b.title@,
+        a.status@ == b.status@,
+        a.fields@ == b.fields@,
+        a.deliverables@ == b.deliverables@,
+    ensures
+        forall|k: int| ticket_rule(a, s, k) == ticket_rule(b, s, k),
+        forall|e: TicketError| first_ticket_violation(a, s, e) == first_ticket_violation(b, s, e),
+        valid_ticket(a, s) == valid_ticket(b, s),
+{
+    assert(ticket_rule1(a) == ticket_rule1(b));
+    assert(ticket_rule2(a, s) == ticket_rule2(b, s));
+    assert(ticket_rule3(a, s) == ticket_rule3(b, s));
+    assert(ticket_rule4(a, s) == ticket_rule4(b, s)) by {
+        assert(a.fields@ == b.fields@);
+    }
+    assert(ticket_rule5(a) == ticket_rule5(b));
+    assert forall|k: int| #[trigger] ticket_rule(a, s, k) == ticket_rule(b, s, k) by {
+        if k == 1 {
+        } else if k == 2 {
+        } else if k == 3 {
+        } else if k == 4 {
+        } else {
+        }
+    }
+    assert forall|e: TicketError| #[trigger] first_ticket_violation(a, s, e) == first_ticket_violation(
+        b,
+        s,
+        e,
+    ) by {
+        assert(ticket_rule(a, s, e.rule as int) == ticket_rule(b, s, e.rule as int));
+        if first_ticket_violation(a, s, e) {
+            assert forall|k: int| 1 <= k < e.rule implies ticket_rule(b, s, k) by {
+                assert(ticket_rule(a, s, k));
+            }
+        }
+        if first_ticket_violation(b, s, e) {
+            assert forall|k: int| 1 <= k < e.rule implies ticket_rule(a, s, k) by {
+                assert(ticket_rule(b, s, k));
+            }
+        }
+    }
+}
+
 pub fn check_status_known(s: &Schema, name: &String) -> (r: bool)
     ensures
         r == status_known(*s, name@),
