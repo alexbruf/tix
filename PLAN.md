@@ -66,6 +66,15 @@ Follows the order of work in `docs/HANDOFF.md`. Each step ends with a green gate
 
 - TIX-4 vs TIX-5 (sync `prompt` vs async `node:readline`): the host runs `node:readline` in a `worker_threads` worker and blocks the main thread with `Atomics.wait` on a `SharedArrayBuffer` until the answer arrives. Both requirements hold as written. User approved (2026-09-14).
 
+- Core timestamps are `u64` unix seconds; `tix-io` renders RFC 3339 UTC.
+- Status `group` is a `String` in the core so TIX-9 rule 2 is proved there; field `type` is an enum because TIX-8 (parse) owns that check.
+- A ticket with duplicate field keys violates TIX-11 rule 4 (unrepresentable in YAML anyway; keeps lookups well-defined).
+- Write operations (TIX-25) do not require `valid_ticket(t)` as a precondition, so `set`/`mv` can repair tickets broken by a schema change (TIX-10). They validate the result instead.
+- `detach` failures (no match, or more than one match) use their own error type; they are not TIX-11 rules.
+- Field `default`s are applied by `tix-io` in `new` before prompting; a required field with a default is not prompted.
+- `board`, `filter` and `ls` sorting return indices into the input `Vec<Ticket>`, which keeps the partition proofs simple.
+- An invalid `tix.yaml` makes every command except `init` and `check` exit 1 with the schema error.
+- `tix set` with the same KEY twice is a usage error (exit 2).
 - `?` board column appears only when non-empty (TIX-21 wording wins over TIX-26's).
 - With `--group`, unknown-status tickets still go to a trailing `?` column.
 - `filter` takes the schema as an extra argument, since `group:v` needs it (TIX-27).
