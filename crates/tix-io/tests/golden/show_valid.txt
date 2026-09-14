@@ -1,0 +1,15 @@
+$ tix show 01K5F000
+exit: 0
+--- stdout
+id: 01K5F000000000000000000000
+title: Has both
+status: backlog
+created: 2026-09-10T09:00:00Z
+updated: 2026-09-10T09:00:00Z
+client: nova
+type: article
+deliverables:
+  draft -> https://docs.google.com/document/d/xyz
+
+A real brief.
+--- stderr

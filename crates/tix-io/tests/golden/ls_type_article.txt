@@ -1,0 +1,7 @@
+$ tix ls type:article
+exit: 0
+--- stdout
+ ID         STATUS   TITLE                            client  type
+ 01K5AQ9Z   backlog  Nova product comparison article  nova    article
+ !01K5E9F8  review   Needs review                     acme    article
+--- stderr

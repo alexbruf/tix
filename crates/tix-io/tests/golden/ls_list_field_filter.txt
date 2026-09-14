@@ -1,0 +1,6 @@
+$ tix ls tags:urgent
+exit: 0
+--- stdout
+ ID        STATUS   TITLE
+ 01K5AQ9Z  backlog  Has the tag
+--- stderr

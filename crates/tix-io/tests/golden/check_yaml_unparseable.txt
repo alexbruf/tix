@@ -1,0 +1,6 @@
+$ tix check
+exit: 1
+--- stdout
+tix.yaml: invalid tix.yaml: invalid type: sequence, expected struct RawSchema
+--- stderr
+1 problem(s)

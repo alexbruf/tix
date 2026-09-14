@@ -1,0 +1,6 @@
+$ tix check
+exit: 1
+--- stdout
+tix.yaml: rule 5: enum field 'type' needs at least one value and unique values
+--- stderr
+1 problem(s)
