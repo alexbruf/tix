@@ -1,5 +1,7 @@
 # tix build plan
 
+Status (2026-09-14): steps 0-6 done and green locally; step 7 verified on macOS via `npm pack` + `npx --package`. Linux/Windows runs and publishing wait for a remote and user approval.
+
 Follows the order of work in `docs/HANDOFF.md`. Each step ends with a green gate and a commit on `build/v1`.
 
 ## Step 0: Toolchain and repo (done in this commit, minus Verus install)
