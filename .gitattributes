@@ -1,0 +1,4 @@
+# Fixtures and goldens are byte-exact (TIX-12); keep LF on every OS.
+tests/fixtures/** text eol=lf
+tests/node/golden/** text eol=lf
+crates/tix-io/tests/golden/** text eol=lf
