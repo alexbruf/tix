@@ -21,7 +21,18 @@ curl -fsSL https://raw.githubusercontent.com/alexbruf/tix/main/install.sh | sh
 
 Installs the latest release to `~/.local/bin/tix`. Set `TIX_INSTALL_DIR` to choose another folder.
 
-**Windows**: download `tix-x86_64-pc-windows-msvc.zip` from [Releases](https://github.com/alexbruf/tix/releases), unzip, and put `tix.exe` on your `PATH`.
+**Windows**: download `tix-x86_64-pc-windows-msvc.zip` (or `tix-aarch64-pc-windows-msvc.zip` on ARM) from [Releases](https://github.com/alexbruf/tix/releases), unzip, and put `tix.exe` on your `PATH`.
+
+**Prebuilt binaries** on every [release](https://github.com/alexbruf/tix/releases/latest):
+
+| Platform | x86-64 | ARM64 |
+|---|---|---|
+| macOS | `tix-x86_64-apple-darwin.tar.gz` | `tix-aarch64-apple-darwin.tar.gz` |
+| Linux (static musl) | `tix-x86_64-unknown-linux-musl.tar.gz` | `tix-aarch64-unknown-linux-musl.tar.gz` |
+| Windows | `tix-x86_64-pc-windows-msvc.zip` | `tix-aarch64-pc-windows-msvc.zip` |
+| Any WASI runtime | `tix.wasm` | |
+
+`SHA256SUMS` lists checksums for all of them.
 
 **With Rust**
 
@@ -147,7 +158,7 @@ npm run ci                                   # verus verify, cargo test, wasm bu
 cargo install --path crates/tix-cli          # local tix binary
 ```
 
-Releases: push a `v*` tag and the release workflow attaches binaries for macOS, Linux, Windows and WASI. npm publishing runs only when the `NPM_TOKEN` repository secret is set (see `.env.example`).
+Releases: push a `v*` tag and the release workflow attaches binaries for macOS, Linux and Windows (x86-64 and ARM64) and WASI. npm publishing runs only when the `NPM_TOKEN` repository secret is set (see `.env.example`).
 
 ## License
 
