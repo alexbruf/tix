@@ -1,21 +1,16 @@
 [package]
-name = "tix-cli"
+name = "tix-tui"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [dependencies]
-getrandom = "0.4.3"
 tix-io = { version = "0.1.0", path = "../tix-io" }
-
-[lib]
-name = "tix_cli"
-path = "src/lib.rs"
+tix-cli = { version = "0.1.0", path = "../tix-cli" }
+serde_json = "1.0.151"
+ratatui = "0.30.2"
+crossterm = "0.29.0"
 
 [[bin]]
-name = "tix"
+name = "tix-tui"
 path = "src/main.rs"
-
-
-[dev-dependencies]
-serde_json = "1.0.151"

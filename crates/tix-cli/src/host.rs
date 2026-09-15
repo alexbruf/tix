@@ -86,3 +86,17 @@ impl Host for StdHost {
 pub fn normalize_dir(raw: &str) -> String {
     raw.replace('\\', "/")
 }
+
+/// Absolute, `/`-separated working directory. `TIX_CWD` overrides it for WASI
+/// runtimes whose guest cwd does not match the mounted directory.
+pub fn cwd() -> String {
+    let raw = std::env::var("TIX_CWD")
+        .ok()
+        .or_else(|| {
+            std::env::current_dir()
+                .ok()
+                .map(|p| p.to_string_lossy().into_owned())
+        })
+        .unwrap_or_else(|| "/".to_string());
+    normalize_dir(&raw)
+}

@@ -2,25 +2,9 @@
 //! tix-io commands with the host implemented over `std`, plus `tix mcp` (the
 //! shared MCP server over stdio). Not part of the npm package (TIX-29).
 
-mod host;
-
-use host::{normalize_dir, StdHost};
 use std::io::{BufRead, Write};
+use tix_cli::host::{cwd, StdHost};
 use tix_io::mcp::{self, McpArgs};
-
-/// Absolute, `/`-separated working directory. `TIX_CWD` overrides it for WASI
-/// runtimes whose guest cwd does not match the mounted directory.
-fn cwd() -> String {
-    let raw = std::env::var("TIX_CWD")
-        .ok()
-        .or_else(|| {
-            std::env::current_dir()
-                .ok()
-                .map(|p| p.to_string_lossy().into_owned())
-        })
-        .unwrap_or_else(|| "/".to_string());
-    normalize_dir(&raw)
-}
 
 /// `tix mcp`: one JSON-RPC message per stdin line, one response per stdout line.
 fn serve_mcp(args: &[String]) -> i32 {

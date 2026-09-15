@@ -108,8 +108,9 @@ Follows the order of work in `docs/HANDOFF.md`. Each step ends with a green gate
 
 ## Step 8: `tix-tui` (unnumbered, native-only extra)
 
-- New crate `crates/tix-tui`, built with `ratatui` + `crossterm`. Not part of the workspace's wasm target and not published to npm; ships only via `cargo install --path crates/tix-tui` (or as a subcommand of `tix-cli` — decide when scoping starts, record the choice here).
-- Reuses `tix-io`'s `Storage` trait with a real-filesystem impl (same shape as `tix-cli`'s), and the existing command logic (`ls`, `show`, `set`, `mv`, `board`) rather than reimplementing board/filter/render logic.
-- Read-focused first pass: board view + ticket detail, keyboard navigation, live filter. Mutating actions (`mv`, `set`) are a later pass, gated on the read-only view being solid.
-- Gate: manual run against a fixture workspace (`tests/fixtures/`); no golden-file suite planned yet since TUI output isn't a stable string to diff.
-- Owner: not yet started.
+- New crate `crates/tix-tui`, own binary `tix-tui` (not a `tix-cli` subcommand — kept ratatui/crossterm out of the plain `tix` binary's dependency graph, and a TUI panic can't take down the scriptable CLI). `ratatui = "0.30.2"`, `crossterm = "0.29.0"` (versions `cargo add` resolved 2026-09-14).
+- `tix-cli` split into a lib (`src/lib.rs` exposing `host::{StdHost, cwd, normalize_dir}`) plus its existing `tix` bin, so `tix-tui` reuses the real-filesystem `Host` impl instead of forking it.
+- Runs board/show as `tix_io::run(...)` through `tix_io::host::CaptureHost` (extracted from `tix-io::mcp`'s private `Capture`, now shared by `tix mcp` and `tix-tui`) — same JSON the CLI and MCP tools produce, parsed with `serde_json`. No new `Storage`/`Host` shape, no wasm export, no npm packaging change.
+- First pass built: board view (columns from `tix board --json`, `g` toggles `--group`), ticket detail (`tix show --json`), `h/j/k/l`/arrows navigation, `r` refresh, `q`/Ctrl-C quit, `esc`/backspace back from detail. Live filter and mutating actions (`mv`, `set`) are not built yet — next pass.
+- Gate so far: `cargo build --workspace` and `cargo test --workspace` green; `tix board --json` against `tests/fixtures/workspace` confirmed the JSON shape the board/detail rendering assumes. The interactive render/input loop has **not** been exercised in a real terminal — the sandbox this was built in has no TTY. Run `cargo run -p tix-tui` from a real terminal inside a workspace before trusting the UI itself.
+- Owner: main session (scaffold only).

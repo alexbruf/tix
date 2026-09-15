@@ -73,6 +73,62 @@ impl From<IoError> for Failure {
 
 pub type CmdResult = Result<(), Failure>;
 
+/// Wraps a host: storage, clock and randomness pass through; output is
+/// captured into strings and prompts answer nothing. Used by `tix mcp` and
+/// `tix-tui` to run a command in-process and read back its stdout/stderr
+/// instead of the process's own.
+pub struct CaptureHost<'a, H: Host> {
+    inner: &'a mut H,
+    pub out: String,
+    pub err: String,
+}
+
+impl<'a, H: Host> CaptureHost<'a, H> {
+    pub fn new(inner: &'a mut H) -> Self {
+        CaptureHost {
+            inner,
+            out: String::new(),
+            err: String::new(),
+        }
+    }
+}
+
+impl<H: Host> Storage for CaptureHost<'_, H> {
+    fn read(&self, path: &str) -> Result<Option<Vec<u8>>, IoError> {
+        self.inner.read(path)
+    }
+    fn write(&mut self, path: &str, bytes: &[u8]) -> Result<(), IoError> {
+        self.inner.write(path, bytes)
+    }
+    fn list_dir(&self, path: &str) -> Result<Vec<String>, IoError> {
+        self.inner.list_dir(path)
+    }
+    fn mkdir_all(&mut self, path: &str) -> Result<(), IoError> {
+        self.inner.mkdir_all(path)
+    }
+    fn exists(&self, path: &str) -> Result<bool, IoError> {
+        self.inner.exists(path)
+    }
+}
+
+impl<H: Host> Host for CaptureHost<'_, H> {
+    fn prompt(&mut self, _: &str, _: PromptKind, _: &[String]) -> Option<String> {
+        None
+    }
+    fn stdout(&mut self, text: &str) {
+        self.out.push_str(text);
+    }
+    fn stderr(&mut self, text: &str) {
+        self.err.push_str(text);
+    }
+    fn now_unix(&mut self) -> u64 {
+        self.inner.now_unix()
+    }
+    fn random_bytes(&mut self, n: usize) -> Vec<u8> {
+        self.inner.random_bytes(n)
+    }
+}
+
 /// Per-command context. Implements [`Storage`] with paths relative to the
 /// workspace root (TIX-3).
 pub struct Ctx<'a, H: Host> {

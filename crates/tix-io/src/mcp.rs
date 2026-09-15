@@ -4,8 +4,7 @@
 //! exactly. Hosts feed one message per line to [`handle`] and write back the
 //! returned line, if any.
 
-use crate::host::{Host, PromptKind};
-use crate::storage::{IoError, Storage};
+use crate::host::{CaptureHost, Host};
 use serde_json::{json, Map, Value};
 
 pub const PROTOCOL_VERSIONS: [&str; 3] = ["2025-06-18", "2025-03-26", "2024-11-05"];
@@ -60,50 +59,6 @@ pub fn parse_args(args: &[String], cwd: &str) -> McpArgs {
         }
     }
     McpArgs::Serve { workspace }
-}
-
-/// Wraps a host: storage, clock and randomness pass through; output is
-/// captured and prompts answer nothing (stdout belongs to the protocol).
-struct Capture<'a, H: Host> {
-    inner: &'a mut H,
-    out: String,
-    err: String,
-}
-
-impl<H: Host> Storage for Capture<'_, H> {
-    fn read(&self, path: &str) -> Result<Option<Vec<u8>>, IoError> {
-        self.inner.read(path)
-    }
-    fn write(&mut self, path: &str, bytes: &[u8]) -> Result<(), IoError> {
-        self.inner.write(path, bytes)
-    }
-    fn list_dir(&self, path: &str) -> Result<Vec<String>, IoError> {
-        self.inner.list_dir(path)
-    }
-    fn mkdir_all(&mut self, path: &str) -> Result<(), IoError> {
-        self.inner.mkdir_all(path)
-    }
-    fn exists(&self, path: &str) -> Result<bool, IoError> {
-        self.inner.exists(path)
-    }
-}
-
-impl<H: Host> Host for Capture<'_, H> {
-    fn prompt(&mut self, _: &str, _: PromptKind, _: &[String]) -> Option<String> {
-        None
-    }
-    fn stdout(&mut self, text: &str) {
-        self.out.push_str(text);
-    }
-    fn stderr(&mut self, text: &str) {
-        self.err.push_str(text);
-    }
-    fn now_unix(&mut self) -> u64 {
-        self.inner.now_unix()
-    }
-    fn random_bytes(&mut self, n: usize) -> Vec<u8> {
-        self.inner.random_bytes(n)
-    }
 }
 
 fn workspace_prop() -> Value {
@@ -303,11 +258,7 @@ fn call_tool<H: Host>(
         Ok(None) => default_dir.to_string(),
         Err(msg) => return text_result(format!("invalid arguments: {msg}"), true),
     };
-    let mut cap = Capture {
-        inner: host,
-        out: String::new(),
-        err: String::new(),
-    };
+    let mut cap = CaptureHost::new(host);
     let code = crate::cli::run(&mut cap, &argv, &dir);
     if code == 0 {
         let mut text = cap.out;
