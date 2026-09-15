@@ -23,7 +23,7 @@ jobs:
           - { target: wasm32-wasip1, os: ubuntu-latest }
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Rust toolchain
         shell: bash
         run: |
@@ -47,7 +47,7 @@ jobs:
             wasm32-wasip1) cp "$dir/tix.wasm" out/tix.wasm ;;
             *) tar -C "$dir" -czf "out/tix-${{ matrix.target }}.tar.gz" tix ;;
           esac
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: tix-${{ matrix.target }}
           path: out/*
@@ -56,13 +56,13 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: out
           merge-multiple: true
       - name: Checksums
         run: cd out && sha256sum * > SHA256SUMS
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           files: out/*
           generate_release_notes: true

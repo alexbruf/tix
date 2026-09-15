@@ -64,7 +64,21 @@ tix new --help        # inside a board: lists its fields and allowed values
 
 `tix` is designed to be scripted: `--no-prompt` never waits on stdin, `--json` prints one JSON document, errors go to stderr, and exit codes are stable (`0` ok, `1` validation, `2` usage, `3` I/O).
 
-**Claude Code skill**: teaches agents how to use `tix` well.
+**MCP server**: the `tix` binary is also a local MCP server. Every command becomes a tool (`tix_new`, `tix_ls`, `tix_set`, ...) that returns the command's JSON or an error naming the broken rule.
+
+```sh
+claude mcp add tix -- tix mcp                       # Claude Code
+```
+
+Other clients (Claude Desktop, Cursor, ...):
+
+```json
+{ "mcpServers": { "tix": { "command": "tix", "args": ["mcp", "--workspace", "/path/to/board"] } } }
+```
+
+Tools take an optional `workspace` path; `--workspace` sets the default (otherwise the server's working directory). See `tix mcp --help`.
+
+**Claude Code skill**: teaches agents how to use `tix` well (CLI or MCP).
 
 ```sh
 mkdir -p ~/.claude/skills/tix
@@ -119,7 +133,7 @@ Field types: `string`, `enum` (with `values`), `date` (`YYYY-MM-DD`), `list`. Ev
 
 - `crates/tix-core`: the ticket logic (validation, writes, filtering, sorting, board layout), formally verified with [Verus](https://github.com/verus-lang/verus). Validation is proved equivalent to the spec; every write is proved to keep tickets valid and change only what it names.
 - `crates/tix-io`: argument parsing, YAML and Markdown, tables, and all commands, behind a five-method storage trait.
-- `crates/tix-cli`: the `tix` binary (native or `wasm32-wasip1`).
+- `crates/tix-cli`: the `tix` binary (native or `wasm32-wasip1`) and the `tix mcp` server.
 - `crates/tix-wasm` + `bin/tix.js`: the same core as a WebAssembly npm package for Node 20+.
 
 Requirements are in [`tix.sdoc`](tix.sdoc); design decisions are logged in [`PLAN.md`](PLAN.md); contributor notes in [`CLAUDE.md`](CLAUDE.md).

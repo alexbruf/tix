@@ -17,7 +17,7 @@ rust-toolchain.toml        pinned to the toolchain the pinned Verus release need
 crates/tix-core/           VERIFIED. Deps: vstd, verus_builtin, verus_builtin_macros only
 crates/tix-io/             clap, serde_yaml, comfy-table, ulid, Storage trait, commands, help text
 crates/tix-wasm/           wasm-bindgen glue, exports run(argv, cwd) -> u32
-crates/tix-cli/            standalone `tix` binary (native or wasm32-wasip1), host over std; not in npm
+crates/tix-cli/            standalone `tix` binary (native or wasm32-wasip1) + `tix mcp` server (native); not in npm
 bin/tix.js                 Node host (~150 lines), FsAdapter over node:fs
 dist/                      wasm-pack output (tix_wasm.js, tix_wasm_bg.wasm), not committed
 tests/node/                Node integration + host-contract suites, golden files

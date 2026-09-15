@@ -28,6 +28,12 @@ This skill is a map; the help has the details and always matches the installed v
 - Pass `--json` whenever you read the output. Every command prints exactly one JSON document on stdout; errors go to stderr.
 - Use full ids from `--json` output when you act on a ticket. The 8-character short ids in tables can collide for tickets created in the same second.
 
+## CLI or MCP
+
+If the `tix_*` MCP tools are available (server started with `tix mcp`), use them instead of the shell: `tix_help` replaces `--help`, tools already run with `--json --no-prompt`, and each takes an optional `workspace` path. Failures come back as tool errors starting with `exit N (...)` and naming the rule. Everything below applies the same way; the recipes map one-to-one (`tix set <ID> a=b` is `tix_set {"id": ..., "values": {"a": "b"}}`).
+
+To add the server: `claude mcp add tix -- tix mcp`.
+
 ## Setup check
 
 ```sh

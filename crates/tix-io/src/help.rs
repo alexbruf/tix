@@ -62,6 +62,10 @@ EXIT CODES
      shorter than 4, no tix.yaml found, tix.yaml already exists (init)
   3  I/O error reading or writing files
 
+MCP
+  The standalone `tix` binary also runs as a local MCP server with one tool per command:
+  `tix mcp` (setup: `claude mcp add tix -- tix mcp`; see `tix mcp --help`).
+
 FILES
   <workspace>/tix.yaml                 schema; run `tix check` after editing
   <workspace>/tickets/<ID>/ticket.md   one ticket; safe to edit by hand, then run `tix check`
