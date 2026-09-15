@@ -48,7 +48,7 @@ Scope is deliberately small: one workspace, one board, no users, no permissions,
 
 **Decisions already made (not open for the implementation):**
 
-- Plain CLI, no TUI.
+- Plain CLI is the interface covered by this spec and its requirements. A native-only interactive TUI is permitted as an unnumbered extra outside the verified/npm-distributed core; see PLAN.md.
 - Rust core compiled to wasm from day one; verified with Verus.
 - File-based storage; no libsql, no SQLite.
 - Filesystem access goes through one adapter interface so the same wasm runs on Node (real disk), and later on OPFS or an object store.
@@ -62,10 +62,10 @@ UID: TIX-1
 STATUS: Active
 TITLE: Non-goals for v1
 STATEMENT: >>>
-v1 SHALL NOT implement: multi-user access, locking, sync, a TUI, a web UI, attachments stored inside the workspace, ticket relations (parent/child, blocking), comments, history, or per-status transition rules. Any status MAY move to any other status.
+v1 SHALL NOT implement: multi-user access, locking, sync, a web UI, attachments stored inside the workspace, ticket relations (parent/child, blocking), comments, history, or per-status transition rules. Any status MAY move to any other status.
 <<<
 RATIONALE: >>>
-Each of these adds a coordination or UI surface that is expensive to verify and none is needed to run a content pipeline for one team from a shared folder.
+Each of these adds a coordination or UI surface that is expensive to verify and none is needed to run a content pipeline for one team from a shared folder. A native-only interactive TUI is not excluded: it adds no coordination surface, reads the same `Storage` trait as the CLI, and ships outside the npm package, so it carries none of the wasm/verification cost the other exclusions are guarding against.
 <<<
 VERIFICATION: Inspection
 

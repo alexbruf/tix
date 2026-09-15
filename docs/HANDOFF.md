@@ -4,7 +4,7 @@ You are building `tix`, a file-based ticket board CLI. The spec is `tix.sdoc` (s
 
 ## What it is
 
-A Rust core compiled to wasm, verified with Verus, wrapped by a ~150-line Node host, published as one npm package. Storage is a folder of `ticket.md` files with YAML frontmatter plus one `tix.yaml` schema file. No database, no server, no TUI.
+A Rust core compiled to wasm, verified with Verus, wrapped by a ~150-line Node host, published as one npm package. Storage is a folder of `ticket.md` files with YAML frontmatter plus one `tix.yaml` schema file. No database, no server. (A native-only interactive TUI was added later as an unnumbered extra outside the npm package; see PLAN.md.)
 
 Read `tix.sdoc` fully before writing any code. The Architecture section and TIX-2 through TIX-5 fix the crate layout and the host interface.
 

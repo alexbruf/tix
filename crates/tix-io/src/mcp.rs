@@ -34,7 +34,7 @@ Tools: tix_help, tix_init, tix_check, tix_new, tix_ls, tix_show, tix_mv, tix_set
 
 Setup:
   Claude Code:   claude mcp add tix -- tix mcp
-                 claude mcp add tix -- npx -y @viewengine/tix mcp     (Node 20+)
+                 claude mcp add tix -- npx -y @viewengine/tix mcp     (Node 18+)
   Other clients: {\"mcpServers\": {\"tix\": {\"command\": \"tix\", \"args\": [\"mcp\", \"--workspace\", \"/path/to/board\"]}}}
 ";
 

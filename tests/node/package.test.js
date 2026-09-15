@@ -69,9 +69,9 @@ test('TIX-29 package: no install-time scripts', () => {
   }
 });
 
-test('TIX-29 package: engines.node requires >=20', () => {
+test('TIX-29 package: engines.node requires >=18', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf8'));
-  assert.strictEqual(pkg.engines && pkg.engines.node, '>=20');
+  assert.strictEqual(pkg.engines && pkg.engines.node, '>=18');
 });
 
 test('TIX-29 package: the wasm module imports exactly the ten TIX-4 host functions', () => {

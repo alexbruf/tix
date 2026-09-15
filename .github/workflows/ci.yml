@@ -70,6 +70,21 @@ jobs:
           "$BIN" check
           "$BIN" board
 
+  # The npm package supports Node 18+ (engines); run the Node suites on the oldest.
+  node18:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 18
+      - run: npm run test:node
+
   # TIX-29: the packed tarball must run on every OS with Node 20 and nothing else.
   package:
     needs: build
@@ -99,7 +114,7 @@ jobs:
   # npm trusted publishing (OIDC): no token. Configure on npmjs.com under the package's
   # Settings > Trusted publisher: GitHub Actions, user alexbruf, repo tix, workflow ci.yml.
   publish:
-    needs: [build, native, package]
+    needs: [build, native, node18, package]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
