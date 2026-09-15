@@ -138,8 +138,30 @@ function run(argv, cwd, host = createHost()) {
   }
 }
 
-module.exports = { createHost, nodeFs, promptSync, run };
+/** `tix mcp`: serves the shared MCP server over stdio, one JSON message per line. */
+function serveMcp(args, cwd, host = createHost()) {
+  const wasm = require('../dist/tix_wasm.js');
+  const [kind, value] = wasm.mcp_args(args, toPosix(cwd));
+  if (kind === 'help') return void process.stdout.write(value);
+  if (kind === 'error') return void (process.stderr.write(`${value}\n`), (process.exitCode = 2));
+  globalThis.tix_host = host;
+  const rl = require('node:readline').createInterface({ input: process.stdin, terminal: false });
+  rl.on('line', (line) => {
+    if (!line.trim()) return;
+    const reply = wasm.mcp_handle(line, value);
+    if (reply != null) process.stdout.write(`${reply}\n`);
+  });
+}
+
+module.exports = { createHost, nodeFs, promptSync, run, serveMcp };
 
 if (require.main === module) {
-  process.exitCode = run(process.argv.slice(2), process.cwd());
+  if (Number(process.versions.node.split('.')[0]) < 20) {
+    process.stderr.write(`tix needs Node.js 20 or newer (found ${process.version}).\n` +
+      'Upgrade Node, or install the native binary: https://github.com/alexbruf/tix#install\n');
+    process.exit(2);
+  }
+  const argv = process.argv.slice(2);
+  if (argv[0] === 'mcp') serveMcp(argv.slice(1), process.cwd());
+  else process.exitCode = run(argv, process.cwd());
 }

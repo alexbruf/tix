@@ -12,11 +12,6 @@ tix-io = { version = "0.1.0", path = "../tix-io" }
 name = "tix"
 path = "src/main.rs"
 
-[target.'cfg(not(target_os = "wasi"))'.dependencies]
-rmcp = { version = "3.3.0", features = ["server", "macros", "transport-io"] }
-serde = { version = "1.0.229", features = ["derive"] }
-serde_json = "1.0.151"
-tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread", "io-std"] }
 
 [dev-dependencies]
 serde_json = "1.0.151"

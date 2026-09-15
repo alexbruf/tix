@@ -32,7 +32,7 @@ This skill is a map; the help has the details and always matches the installed v
 
 If the `tix_*` MCP tools are available (server started with `tix mcp`), use them instead of the shell: `tix_help` replaces `--help`, tools already run with `--json --no-prompt`, and each takes an optional `workspace` path. Failures come back as tool errors starting with `exit N (...)` and naming the rule. Everything below applies the same way; the recipes map one-to-one (`tix set <ID> a=b` is `tix_set {"id": ..., "values": {"a": "b"}}`).
 
-To add the server: `claude mcp add tix -- tix mcp`.
+To add the server: `claude mcp add tix -- tix mcp` (installed binary) or `claude mcp add tix -- npx -y @viewengine/tix mcp` (Node 20+).
 
 ## Setup check
 
@@ -41,7 +41,7 @@ tix --version          # installed?
 tix check --json       # inside a workspace? {"ok": true, "problems": []}
 ```
 
-- `tix: command not found`: tell the user; it installs with `cargo install --path crates/tix-cli` from the tix repo.
+- `tix: command not found`: tell the user; see https://github.com/alexbruf/tix#install (or use `npx @viewengine/tix` with Node 20+).
 - `no tix.yaml found` (exit 2): there is no workspace here or above. **Ask the user** before running `tix init`, and where; it creates `tix.yaml` and `tickets/` in the current directory.
 
 ## Recipes

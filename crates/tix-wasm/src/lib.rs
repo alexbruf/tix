@@ -84,6 +84,23 @@ impl Host for JsHost {
     }
 }
 
+/// `tix mcp` argument handling for the JS host: `["serve", workspace]`,
+/// `["help", text]` or `["error", message]`.
+#[wasm_bindgen]
+pub fn mcp_args(args: Vec<String>, cwd: String) -> Vec<String> {
+    match tix_io::mcp::parse_args(&args, &cwd) {
+        tix_io::mcp::McpArgs::Serve { workspace } => vec!["serve".into(), workspace],
+        tix_io::mcp::McpArgs::Help => vec!["help".into(), tix_io::mcp::HELP.into()],
+        tix_io::mcp::McpArgs::Error(m) => vec!["error".into(), m],
+    }
+}
+
+/// Handles one MCP JSON-RPC message; returns the response line, if any.
+#[wasm_bindgen]
+pub fn mcp_handle(line: String, workspace: String) -> Option<String> {
+    tix_io::mcp::handle(&mut JsHost, &workspace, &line)
+}
+
 /// Runs one `tix` invocation and returns the process exit code (TIX-4).
 #[wasm_bindgen]
 pub fn run(argv: Vec<String>, cwd: String) -> u32 {

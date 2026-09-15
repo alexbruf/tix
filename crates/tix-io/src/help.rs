@@ -63,8 +63,8 @@ EXIT CODES
   3  I/O error reading or writing files
 
 MCP
-  The standalone `tix` binary also runs as a local MCP server with one tool per command:
-  `tix mcp` (setup: `claude mcp add tix -- tix mcp`; see `tix mcp --help`).
+  `tix mcp` runs a local MCP server with one tool per command (setup:
+  `claude mcp add tix -- tix mcp`, or `npx -y @viewengine/tix mcp`; see `tix mcp --help`).
 
 FILES
   <workspace>/tix.yaml                 schema; run `tix check` after editing
