@@ -837,7 +837,7 @@ dependencies = [
 
 [[package]]
 name = "tix-cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "getrandom 0.4.3",
  "rmcp",
@@ -849,14 +849,14 @@ dependencies = [
 
 [[package]]
 name = "tix-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "vstd",
 ]
 
 [[package]]
 name = "tix-io"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "clap",
  "comfy-table",
@@ -870,7 +870,7 @@ dependencies = [
 
 [[package]]
 name = "tix-wasm"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "tix-io",
  "wasm-bindgen",
