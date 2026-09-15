@@ -157,8 +157,8 @@ function serveMcp(args, cwd, host = createHost()) {
 module.exports = { createHost, nodeFs, promptSync, run, serveMcp };
 
 if (require.main === module) {
-  if (Number(process.versions.node.split('.')[0]) < 20) {
-    process.stderr.write(`tix needs Node.js 20 or newer (found ${process.version}).\n` +
+  if (Number(process.versions.node.split('.')[0]) < 18) {
+    process.stderr.write(`tix needs Node.js 18 or newer (found ${process.version}).\n` +
       'Upgrade Node, or install the native binary: https://github.com/alexbruf/tix#install\n');
     process.exit(2);
   }

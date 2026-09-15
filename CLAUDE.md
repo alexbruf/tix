@@ -72,7 +72,7 @@ Everything else: decide, then record it under "Decisions" in `PLAN.md`.
 
 ## Tooling notes
 
-- User default is `bun`/`bunx`, but this product is a Node 20 package: the integration suite runs under `node --test` and packaging uses `npm pack` / `npm publish` because the spec names them. Use `bun` only for ad-hoc scripting.
+- User default is `bun`/`bunx`, but this product is a Node package (engines `>=18`): the integration suite runs under `node --test` and packaging uses `npm pack` / `npm publish` because the spec names them. Use `bun` only for ad-hoc scripting.
 - Verus is installed from a pinned GitHub release binary; record the version in `PLAN.md` and `rust-toolchain.toml`.
 
 ## Releasing

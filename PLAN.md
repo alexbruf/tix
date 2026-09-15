@@ -101,5 +101,15 @@ Follows the order of work in `docs/HANDOFF.md`. Each step ends with a green gate
 - `serde_yaml` is archived upstream but is named by the handoff, so it is used as-is (0.9).
 - **Fourth crate `tix-cli` (user request, 2026-09-14):** a standalone `tix` executable. Wasmer removed `create-exe`, so the user chose a native Rust build; the same crate also builds for `wasm32-wasip1` (runs under wasmtime `--dir=.` or wasmer `--volume .:/ws --env TIX_CWD=/ws`). It is not part of the npm package, which stays pure wasm (TIX-29).
 - **`tix mcp` (user request, 2026-09-14):** one MCP server (JSON-RPC over stdio, protocol 2025-06-18/2025-03-26/2024-11-05) lives in `tix-io::mcp` and is served by both the native binary and the npm package (`npx @viewengine/tix mcp`). Tools run the real command in-process through a capturing host with `--json --no-prompt`. It replaced an `rmcp`-based native-only server so both hosts share one implementation and tool schema. The wasm module therefore exports `mcp_args` and `mcp_handle` in addition to `run` (TIX-4 lists only `run`); imports are unchanged.
+- **Node 18 support (user request, 2026-09-15):** `engines.node` is `>=18` (TIX-5/TIX-29 say 20+) so the npm package and `npx @viewengine/tix mcp` run in Node 18 containers. The full Node suite passes on 18.20.8; CI runs it on Node 18.
 - `--help` (long) is written for AI agents; `-h` stays a short summary.
 - `tix-spec-html.zip` is a rendering of `tix.sdoc`; not committed.
+- **Native-only interactive TUI (user request, 2026-09-14):** tix.sdoc TIX-1 amended (with user approval) to drop "a TUI" from v1 non-goals; the "Plain CLI, no TUI" decision line was reworded. The TUI is an unnumbered extra, not a `TIX-nn` requirement, and is not part of the npm-distributed core: no wasm export, no `Storage`-trait change, no new `tix.yaml` shape. See Step 8.
+
+## Step 8: `tix-tui` (unnumbered, native-only extra)
+
+- New crate `crates/tix-tui`, built with `ratatui` + `crossterm`. Not part of the workspace's wasm target and not published to npm; ships only via `cargo install --path crates/tix-tui` (or as a subcommand of `tix-cli` — decide when scoping starts, record the choice here).
+- Reuses `tix-io`'s `Storage` trait with a real-filesystem impl (same shape as `tix-cli`'s), and the existing command logic (`ls`, `show`, `set`, `mv`, `board`) rather than reimplementing board/filter/render logic.
+- Read-focused first pass: board view + ticket detail, keyboard navigation, live filter. Mutating actions (`mv`, `set`) are a later pass, gated on the read-only view being solid.
+- Gate: manual run against a fixture workspace (`tests/fixtures/`); no golden-file suite planned yet since TUI output isn't a stable string to diff.
+- Owner: not yet started.

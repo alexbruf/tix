@@ -34,7 +34,7 @@ Installs the latest release to `~/.local/bin/tix`. Set `TIX_INSTALL_DIR` to choo
 
 `SHA256SUMS` lists checksums for all of them.
 
-**With Node 20+** (no install; same commands, runs the WebAssembly build)
+**With Node 18+** (no install; same commands, runs the WebAssembly build)
 
 ```sh
 npx @viewengine/tix --help
@@ -85,7 +85,7 @@ tix new --help        # inside a board: lists its fields and allowed values
 
 ```sh
 claude mcp add tix -- tix mcp                       # Claude Code, installed binary
-claude mcp add tix -- npx -y @viewengine/tix mcp    # Claude Code, via npm (Node 20+)
+claude mcp add tix -- npx -y @viewengine/tix mcp    # Claude Code, via npm (Node 18+)
 ```
 
 Other clients (Claude Desktop, Cursor, ...):
@@ -153,7 +153,7 @@ Field types: `string`, `enum` (with `values`), `date` (`YYYY-MM-DD`), `list`. Ev
 - `crates/tix-io`: argument parsing, YAML and Markdown, tables, and all commands, behind a five-method storage trait.
 - `crates/tix-cli`: the `tix` binary (native or `wasm32-wasip1`).
 - `tix mcp`: one MCP server implementation in `tix-io`, served by both the native binary and the npm package.
-- `crates/tix-wasm` + `bin/tix.js`: the same core as a WebAssembly npm package for Node 20+.
+- `crates/tix-wasm` + `bin/tix.js`: the same core as a WebAssembly npm package for Node 18+.
 
 Requirements are in [`tix.sdoc`](tix.sdoc); design decisions are logged in [`PLAN.md`](PLAN.md); contributor notes in [`CLAUDE.md`](CLAUDE.md).
 
