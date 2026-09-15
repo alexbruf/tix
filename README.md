@@ -158,7 +158,7 @@ npm run ci                                   # verus verify, cargo test, wasm bu
 cargo install --path crates/tix-cli          # local tix binary
 ```
 
-Releases: push a `v*` tag and the release workflow attaches binaries for macOS, Linux and Windows (x86-64 and ARM64) and WASI. npm publishing runs only when the `NPM_TOKEN` repository secret is set (see `.env.example`).
+Releases: push a `v*` tag and the release workflow attaches binaries for macOS, Linux and Windows (x86-64 and ARM64) and WASI. The same tag publishes `@viewengine/tix` to npm through trusted publishing (no token); the tag must match `package.json`'s version.
 
 ## License
 

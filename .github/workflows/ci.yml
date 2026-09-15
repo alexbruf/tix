@@ -96,10 +96,15 @@ jobs:
           npx --yes --package="$TARBALL" tix new --title x --client y --type article --no-prompt
           npx --yes --package="$TARBALL" tix board
 
+  # npm trusted publishing (OIDC): no token. Configure on npmjs.com under the package's
+  # Settings > Trusted publisher: GitHub Actions, user alexbruf, repo tix, workflow ci.yml.
   publish:
     needs: [build, native, package]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
@@ -108,14 +113,10 @@ jobs:
           path: dist/
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 24
           registry-url: https://registry.npmjs.org
-      - name: npm publish (skipped until the NPM_TOKEN secret exists)
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          if [ -z "$NODE_AUTH_TOKEN" ]; then
-            echo "::notice::NPM_TOKEN not set; skipping npm publish"
-            exit 0
-          fi
-          npm publish --access public
+      - name: Tag matches package.json version
+        run: test "v$(node -p 'require("./package.json").version')" = "$GITHUB_REF_NAME"
+      - name: npm >= 11.5.1 (required for trusted publishing)
+        run: npm install -g npm@latest
+      - run: npm publish --access public

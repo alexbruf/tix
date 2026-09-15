@@ -3,10 +3,34 @@
   "version": "0.1.0",
   "description": "File-based ticket board for content work",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexbruf/tix.git"
+  },
+  "homepage": "https://github.com/alexbruf/tix#readme",
+  "bugs": {
+    "url": "https://github.com/alexbruf/tix/issues"
+  },
+  "keywords": [
+    "tickets",
+    "kanban",
+    "cli",
+    "markdown",
+    "wasm",
+    "ai-agents"
+  ],
   "type": "commonjs",
-  "bin": { "tix": "bin/tix.js" },
-  "files": ["bin/", "dist/tix_wasm.js", "dist/tix_wasm_bg.wasm"],
-  "engines": { "node": ">=20" },
+  "bin": {
+    "tix": "bin/tix.js"
+  },
+  "files": [
+    "bin/",
+    "dist/tix_wasm.js",
+    "dist/tix_wasm_bg.wasm"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "verify": "cargo verus verify -p tix-core",
     "test:rust": "cargo test --workspace",
