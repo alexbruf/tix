@@ -17,7 +17,8 @@ rust-toolchain.toml        pinned to the toolchain the pinned Verus release need
 crates/tix-core/           VERIFIED. Deps: vstd, verus_builtin, verus_builtin_macros only
 crates/tix-io/             clap, serde_yaml, comfy-table, ulid, Storage trait, commands, help text
 crates/tix-wasm/           wasm-bindgen glue, exports run(argv, cwd) -> u32
-crates/tix-cli/            standalone `tix` binary (native or wasm32-wasip1) + `tix mcp` server (native); not in npm
+crates/tix-cli/            standalone `tix` binary (native or wasm32-wasip1); not in npm
+                           (`tix mcp` lives in tix-io::mcp and is served by both the binary and bin/tix.js)
 bin/tix.js                 Node host (~150 lines), FsAdapter over node:fs
 dist/                      wasm-pack output (tix_wasm.js, tix_wasm_bg.wasm), not committed
 tests/node/                Node integration + host-contract suites, golden files
@@ -73,6 +74,11 @@ Everything else: decide, then record it under "Decisions" in `PLAN.md`.
 
 - User default is `bun`/`bunx`, but this product is a Node 20 package: the integration suite runs under `node --test` and packaging uses `npm pack` / `npm publish` because the spec names them. Use `bun` only for ad-hoc scripting.
 - Verus is installed from a pinned GitHub release binary; record the version in `PLAN.md` and `rust-toolchain.toml`.
+
+## Releasing
+
+- Bump `version` in `package.json` and the workspace `Cargo.toml`, commit, push, then push a matching `vX.Y.Z` tag.
+- `ci.yml` publishes `@viewengine/tix` to npm via trusted publishing (OIDC, no token); `release.yml` attaches binaries for macOS/Linux/Windows (x86-64, ARM64) and `tix.wasm`.
 
 ## Git
 

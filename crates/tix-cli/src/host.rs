@@ -1,18 +1,11 @@
 //! `Host` over `std`: the filesystem, stdin prompts, the clock and OS randomness.
-//! With `capture`, output is collected instead of printed and prompts return
-//! nothing (the MCP server needs stdout for the protocol).
 
 use std::io::{BufRead, Write};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tix_io::host::{Host, PromptKind};
 use tix_io::storage::{IoError, Storage};
 
-#[derive(Default)]
-pub struct StdHost {
-    pub capture: bool,
-    pub out: String,
-    pub err: String,
-}
+pub struct StdHost;
 
 fn io_err(op: &str, path: &str, e: std::io::Error) -> IoError {
     IoError::new(format!("{op} {path}: {e}"))
@@ -52,9 +45,6 @@ impl Storage for StdHost {
 
 impl Host for StdHost {
     fn prompt(&mut self, label: &str, kind: PromptKind, options: &[String]) -> Option<String> {
-        if self.capture {
-            return None;
-        }
         let hint = match kind {
             _ if !options.is_empty() => format!(" [{}]", options.join("/")),
             PromptKind::Date => " (YYYY-MM-DD)".to_string(),
@@ -71,19 +61,11 @@ impl Host for StdHost {
     }
 
     fn stdout(&mut self, text: &str) {
-        if self.capture {
-            self.out.push_str(text);
-        } else {
-            print!("{text}");
-        }
+        print!("{text}");
     }
 
     fn stderr(&mut self, text: &str) {
-        if self.capture {
-            self.err.push_str(text);
-        } else {
-            eprint!("{text}");
-        }
+        eprint!("{text}");
     }
 
     fn now_unix(&mut self) -> u64 {

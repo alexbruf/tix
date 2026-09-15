@@ -5,6 +5,7 @@ pub mod cli;
 pub mod commands;
 pub mod help;
 pub mod host;
+pub mod mcp;
 pub mod messages;
 pub mod schema_yaml;
 pub mod storage;
