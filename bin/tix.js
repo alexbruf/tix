@@ -51,7 +51,8 @@ const nodeFs = {
 
 // node:readline is asynchronous, but the wasm `prompt` import must return a
 // value. One worker owns a readline over fd 0 for the whole run; this thread
-// posts a question into shared memory and blocks on Atomics.wait for the answer.
+// prints the question with a synchronous write (worker stderr would queue behind
+// the blocked main thread), signals the worker, and blocks on Atomics.wait.
 // state[0]: 0 idle, 1 question posted, 2 answer ready, 3 end of input.
 const PROMPT_WORKER = `
 const { workerData } = require('node:worker_threads');
@@ -66,10 +67,12 @@ const input = fs.createReadStream('', { fd: 0, autoClose: false });
 const rl = readline.createInterface({ input, terminal: false });
 rl.on('line', (l) => { lines.push(l); if (wake) wake(); });
 rl.on('close', () => { ended = true; if (wake) wake(); });
+// A pending Atomics.waitAsync does not keep a worker alive once stdin closes;
+// this timer does (the worker is unref'd, so it never blocks process exit).
+setInterval(() => {}, 1 << 30);
 (async () => {
   for (;;) {
     while (Atomics.load(state, 0) !== 1) await Atomics.waitAsync(state, 0, Atomics.load(state, 0)).value;
-    process.stderr.write(Buffer.from(bytes.subarray(0, Atomics.load(state, 1))).toString('utf8'));
     while (!lines.length && !ended) await new Promise((r) => (wake = r));
     wake = null;
     if (lines.length) {
@@ -95,9 +98,7 @@ function promptSync(label, kind, options) {
   const state = new Int32Array(promptShared, 0, 2);
   const bytes = new Uint8Array(promptShared, 8);
   const hint = options.length ? ` [${options.join('/')}]` : kind === 'date' ? ' (YYYY-MM-DD)' : kind === 'list' ? ' (comma-separated)' : '';
-  const q = Buffer.from(`${label}${hint}: `, 'utf8');
-  bytes.set(q);
-  Atomics.store(state, 1, q.length);
+  fs.writeSync(2, `${label}${hint}: `);
   Atomics.store(state, 0, 1);
   Atomics.notify(state, 0);
   while (Atomics.load(state, 0) === 1) Atomics.wait(state, 0, 1);
